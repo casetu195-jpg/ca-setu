@@ -19,6 +19,10 @@
       "dest": "/api/health.js"
     },
     {
+      "src": "/api/seed",
+      "dest": "/api/seed.js"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/[...path].js"
     },
