@@ -67,7 +67,7 @@ app.use(async (req, res, next) => {
 });
 
 // Production Health Check Endpoint
-app.get('/api/health', (req, res) => {
+const healthHandler = (req, res) => {
   const isDbConnected = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
@@ -81,12 +81,19 @@ app.get('/api/health', (req, res) => {
     serverless: !!process.env.VERCEL,
     timestamp: new Date().toISOString(),
   });
-});
+};
 
-// Mount Core API Routes
+app.get('/api/health', healthHandler);
+app.get('/health', healthHandler);
+app.get('/api', (req, res) => res.json({ status: 'ok', message: 'CA Setu API Serverless Gateway' }));
+
+// Mount Core API Routes (both with /api prefix and relative mount)
 app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
 app.use('/api/jobs', jobRoutes);
+app.use('/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
+app.use('/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);
 
 // Centralized Error Handling Middleware
