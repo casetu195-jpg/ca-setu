@@ -7,7 +7,7 @@ import mongoose from 'mongoose';
 let cached = global.mongoose;
 
 if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+  cached = global.mongoose = { conn: null, promise: null, lastError: null };
 }
 
 export async function connectDB() {
@@ -41,9 +41,11 @@ export async function connectDB() {
 
   try {
     cached.conn = await cached.promise;
+    cached.lastError = null;
     return cached.conn;
   } catch (error) {
     cached.promise = null;
+    cached.lastError = error.message;
     console.error(`❌ [MongoDB Connection Error]: ${error.message}`);
     return null;
   }
