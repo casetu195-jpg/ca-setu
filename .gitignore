@@ -44,3 +44,5 @@ Thumbs.db
 client/test-*.js
 *.test.js
 run-casetu.bat
+push-to-github.bat
+*.bat
