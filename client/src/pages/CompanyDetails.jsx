@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import JobCard from '../components/common/JobCard';
+import SEO from '../components/common/SEO';
 import { Building2, MapPin, Globe, ShieldCheck, ChevronRight, Briefcase } from 'lucide-react';
 
 export default function CompanyDetails() {
@@ -14,6 +15,12 @@ export default function CompanyDetails() {
   if (!company) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
+        <SEO
+          title="Firm Profile Not Found | CA Dwar"
+          description="The requested CA firm profile is not available on CA Dwar."
+          canonicalPath={`/companies/${id}`}
+          noindex={true}
+        />
         <h2 className="text-2xl font-bold text-[#173B63]">Company Not Found</h2>
         <Link to="/companies" className="text-[#176FA8] underline">
           Browse all verified companies
@@ -24,8 +31,18 @@ export default function CompanyDetails() {
 
   const companyJobs = jobs.filter((j) => j.companyId === company.id && j.status === 'Published');
 
+  const seoTitle = `${company.name} — CA Vacancies & Firm Profile | CA Dwar`;
+  const seoDescription = company.description
+    ? `${company.name} - ${company.description.substring(0, 140)}...`
+    : `Explore verified CA Articleship, Industrial Training, and finance openings at ${company.name} on CA Dwar.`;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        canonicalPath={`/companies/${company.id || id}`}
+      />
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500">
         <Link to="/" className="hover:text-[#176FA8]">Home</Link>

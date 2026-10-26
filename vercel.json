@@ -15,6 +15,18 @@
   ],
   "routes": [
     {
+      "src": "/sitemap.xml",
+      "dest": "/api/sitemap.js"
+    },
+    {
+      "src": "/robots.txt",
+      "dest": "/client/robots.txt"
+    },
+    {
+      "src": "/(google[a-zA-Z0-9_-]+\\.html)",
+      "dest": "/client/$1"
+    },
+    {
       "src": "/api/health",
       "dest": "/api/health.js"
     },
@@ -35,7 +47,7 @@
       "dest": "/client/assets/$1"
     },
     {
-      "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp))",
+      "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|txt|xml))",
       "dest": "/client/$1"
     },
     {

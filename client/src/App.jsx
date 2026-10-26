@@ -69,6 +69,7 @@ export default function App() {
               <Routes>
                 {/* 1. Public Pages */}
                 <Route path="/" element={<Home />} />
+                <Route path="/jobs" element={<JobListings />} />
                 <Route path="/articleship" element={<JobListings />} />
                 <Route path="/industrial-training" element={<JobListings />} />
                 <Route path="/ca-jobs" element={<JobListings />} />

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import JobCard from '../components/common/JobCard';
+import SEO from '../components/common/SEO';
 import { getStatusBadgeClass, formatDate } from '../utils/helpers';
 import {
   FileText,
@@ -37,6 +38,7 @@ export default function StudentDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO title="Student Dashboard | CA Dwar" noindex={true} />
       {/* Welcome Banner */}
       <div className="bg-gradient-to-r from-[#173B63] to-[#176FA8] rounded-3xl p-6 sm:p-8 text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-md">
         <div className="space-y-2">

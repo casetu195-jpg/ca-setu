@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import JobCard from '../components/common/JobCard';
 import FilterSidebar from '../components/common/FilterSidebar';
+import SEO from '../components/common/SEO';
 import { Search, SlidersHorizontal, Briefcase, Sparkles, Inbox } from 'lucide-react';
 
 export default function JobListings() {
@@ -12,11 +13,16 @@ export default function JobListings() {
 
   // Determine category based on route
   const currentPath = location.pathname;
+  const categoryParam = searchParams.get('category');
   const category =
-    currentPath === '/industrial-training'
+    currentPath === '/industrial-training' || categoryParam === 'industrial-training'
       ? 'industrial-training'
-      : currentPath === '/ca-jobs'
+      : currentPath === '/ca-jobs' || categoryParam === 'ca-jobs'
       ? 'ca-jobs'
+      : currentPath === '/articleship' || categoryParam === 'articleship'
+      ? 'articleship'
+      : currentPath === '/jobs'
+      ? 'all'
       : 'articleship';
 
   const categoryTitle =
@@ -24,6 +30,8 @@ export default function JobListings() {
       ? 'CA Industrial Training Opportunities'
       : category === 'ca-jobs'
       ? 'Qualified CA Jobs & Careers'
+      : category === 'all'
+      ? 'All CA Opportunities'
       : 'CA Articleship Vacancies';
 
   const categorySubtitle =
@@ -31,7 +39,36 @@ export default function JobListings() {
       ? 'High-impact 9–12 months training in PE, Investment Banking, FMCG, and MNC Banks for CA Finalists.'
       : category === 'ca-jobs'
       ? 'Full-time finance, assurance, tax, and CFO advisory roles for freshly qualified and experienced CAs.'
+      : category === 'all'
+      ? 'Explore verified Articleship, Industrial Training, and CA Jobs across top firms in India.'
       : 'Mandatory practical training under active ICAI Certificate of Practice holders in reputable CA firms.';
+
+  const seoTitle =
+    category === 'industrial-training'
+      ? 'CA Industrial Training Opportunities | CA Dwar'
+      : category === 'ca-jobs'
+      ? 'Chartered Accountant Jobs & Careers | CA Dwar'
+      : category === 'all'
+      ? 'Explore CA Opportunities: Articleship, Training & Jobs | CA Dwar'
+      : 'CA Articleship Vacancies & Opportunities | CA Dwar';
+
+  const seoDescription =
+    category === 'industrial-training'
+      ? 'Explore premier CA Industrial Training openings in Investment Banking, Private Equity, FP&A, and corporate finance across India on CA Dwar.'
+      : category === 'ca-jobs'
+      ? 'Discover career opportunities for qualified Chartered Accountants and fresh CA graduates across leading firms and corporates in India on CA Dwar.'
+      : category === 'all'
+      ? 'Browse verified CA Articleship, Industrial Training, and CA Jobs across India on CA Dwar. Discover openings and connect with recruiters.'
+      : 'Find verified CA Articleship vacancies across top CA firms in India. Apply for statutory audit, tax, and advisory articleship roles on CA Dwar.';
+
+  const seoCanonical =
+    category === 'industrial-training'
+      ? '/industrial-training'
+      : category === 'ca-jobs'
+      ? '/ca-jobs'
+      : category === 'all'
+      ? '/jobs'
+      : '/articleship';
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
@@ -83,7 +120,7 @@ export default function JobListings() {
     return jobs
       .filter((job) => {
         // Category check
-        if (job.category !== category) return false;
+        if (category !== 'all' && job.category !== category) return false;
         // Status check
         if (job.status !== 'Published') return false;
 
@@ -142,6 +179,11 @@ export default function JobListings() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        canonicalPath={seoCanonical}
+      />
       {/* Page Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176FA8]">

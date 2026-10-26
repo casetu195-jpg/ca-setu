@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/common/SEO';
 import { User, Building2, Mail, Lock, Phone, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function Register() {
@@ -64,6 +65,7 @@ export default function Register() {
 
   return (
     <div className="min-h-[85vh] flex items-center justify-center px-4 py-12">
+      <SEO title="Create an Account | CA Dwar" canonicalPath="/register" noindex={true} />
       <div className="max-w-lg w-full space-y-6">
         {/* Top Header */}
         <div className="text-center space-y-2">

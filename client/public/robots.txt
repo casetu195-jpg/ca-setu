@@ -1,0 +1,26 @@
+# Robots.txt for CA Dwar (https://cadwar.in)
+User-agent: *
+Allow: /
+Allow: /articleship
+Allow: /industrial-training
+Allow: /ca-jobs
+Allow: /jobs
+Allow: /jobs/
+Allow: /companies
+Allow: /companies/
+Allow: /about
+Allow: /contact
+
+# Disallow private user dashboards and admin controls
+Disallow: /admin
+Disallow: /admin/
+Disallow: /student
+Disallow: /student/
+Disallow: /employer
+Disallow: /employer/
+Disallow: /login
+Disallow: /register
+Disallow: /api/
+
+# Dynamic XML Sitemap
+Sitemap: https://cadwar.in/sitemap.xml

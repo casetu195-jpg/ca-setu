@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
+import SEO from '../components/common/SEO';
 import { Building2, MapPin, Search, ExternalLink, Briefcase } from 'lucide-react';
 
 export default function Companies() {
@@ -21,6 +22,11 @@ export default function Companies() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO
+        title="Verified CA Firms & Corporate Employers | CA Dwar"
+        description="Browse verified Chartered Accountancy firms and companies hiring CA Articles, Industrial Trainees, and qualified CAs across India on CA Dwar."
+        canonicalPath="/companies"
+      />
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176FA8]">

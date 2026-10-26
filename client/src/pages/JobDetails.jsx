@@ -4,6 +4,7 @@ import { useJobs } from '../context/JobContext';
 import { useAuth } from '../context/AuthContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
 import ApplicationModal from '../components/common/ApplicationModal';
+import SEO from '../components/common/SEO';
 import { formatStipend, formatDate } from '../utils/helpers';
 import {
   MapPin,
@@ -36,6 +37,12 @@ export default function JobDetails() {
   if (!job) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-16 text-center space-y-4">
+        <SEO
+          title="Opportunity Not Available | CA Dwar"
+          description="This opportunity has expired or is no longer accepting applications on CA Dwar."
+          canonicalPath={`/jobs/${id}`}
+          noindex={true}
+        />
         <h2 className="text-2xl font-bold text-[#173B63]">Opportunity Not Found</h2>
         <p className="text-sm text-slate-600">
           The requested job vacancy might have expired or been removed by the employer.
@@ -56,13 +63,61 @@ export default function JobDetails() {
     city: job.city,
     description: 'Prominent financial services & accounting firm.',
     address: 'Mumbai, India',
-    website: 'https://casetu.com',
+    website: 'https://cadwar.in',
   };
 
   const displayName = job.companyName || company.name;
 
   const isSaved = isJobSaved(job.id);
   const alreadyApplied = hasApplied(job.id, user?.id, user?.email);
+
+  const cleanDescription = (job.description || '').replace(/\s+/g, ' ').trim();
+  const seoTitle = `${job.title} at ${displayName} | CA Dwar`;
+  const seoDescription =
+    cleanDescription.length > 155
+      ? `${cleanDescription.substring(0, 152)}...`
+      : cleanDescription || `Apply for ${job.title} vacancy at ${displayName} on CA Dwar.`;
+
+  const jobPostingJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'JobPosting',
+    title: job.title,
+    description: job.description || seoDescription,
+    datePosted: job.createdAt ? new Date(job.createdAt).toISOString() : new Date().toISOString(),
+    validThrough: job.expiresAt ? new Date(job.expiresAt).toISOString() : undefined,
+    employmentType: job.category === 'ca-jobs' ? 'FULL_TIME' : 'INTERN',
+    hiringOrganization: {
+      '@type': 'Organization',
+      name: displayName,
+      sameAs: company.website && !company.website.includes('casetu.com') ? company.website : 'https://cadwar.in',
+      logo: 'https://cadwar.in/favicon.svg',
+    },
+    jobLocation: {
+      '@type': 'Place',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: job.city || 'India',
+        addressCountry: 'IN',
+      },
+    },
+    baseSalary:
+      job.stipendMin && job.stipendMax
+        ? {
+            '@type': 'MonetaryAmount',
+            currency: 'INR',
+            value: {
+              '@type': 'QuantitativeValue',
+              minValue: job.stipendMin,
+              maxValue: job.stipendMax,
+              unitText: job.stipendPeriod === 'Per Annum' ? 'YEAR' : 'MONTH',
+            },
+          }
+        : undefined,
+    applicantLocationRequirements: {
+      '@type': 'Country',
+      name: 'India',
+    },
+  };
 
   const handleShare = () => {
     if (navigator.clipboard) {
@@ -80,6 +135,12 @@ export default function JobDetails() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 pb-24 md:pb-12">
+      <SEO
+        title={seoTitle}
+        description={seoDescription}
+        canonicalPath={`/jobs/${job.id || id}`}
+        jsonLd={jobPostingJsonLd}
+      />
       {/* 1. Breadcrumbs */}
       <nav className="flex items-center gap-1.5 text-xs text-slate-500 overflow-x-auto whitespace-nowrap">
         <Link to="/" className="hover:text-[#176FA8]">Home</Link>

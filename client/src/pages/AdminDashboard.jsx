@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
+import SEO from '../components/common/SEO';
 import {
   ShieldCheck,
   Building2,
@@ -25,6 +26,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO title="Admin Governance Dashboard | CA Dwar" noindex={true} />
       {/* Top Header */}
       <div className="bg-[#173B63] text-white rounded-3xl p-6 sm:p-8 shadow-md flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="space-y-1">

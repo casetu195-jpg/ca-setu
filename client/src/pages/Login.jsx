@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import SEO from '../components/common/SEO';
 import { Mail, Lock, AlertCircle, ArrowRight, Shield } from 'lucide-react';
 
 export default function Login() {
@@ -37,6 +38,7 @@ export default function Login() {
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
+      <SEO title="Sign In | CA Dwar" canonicalPath="/login" noindex={true} />
       <div className="max-w-md w-full space-y-6">
         {/* Top Header */}
         <div className="text-center space-y-2">

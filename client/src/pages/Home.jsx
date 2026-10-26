@@ -4,6 +4,7 @@ import { useJobs } from '../context/JobContext';
 import SearchBar from '../components/common/SearchBar';
 import JobCard from '../components/common/JobCard';
 import VerifiedBadge from '../components/common/VerifiedBadge';
+import SEO from '../components/common/SEO';
 import {
   GraduationCap,
   Briefcase,
@@ -41,6 +42,11 @@ export default function Home() {
 
   return (
     <div className="space-y-16 pb-12">
+      <SEO
+        title="CA Dwar | CA Articleship, Industrial Training & Jobs"
+        description="Explore CA Articleship, Industrial Training and CA job opportunities across India on CA Dwar. Discover openings and connect with recruiters."
+        canonicalPath="/"
+      />
       {/* 1. Hero Section */}
       <section className="relative pt-12 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#EEF6FC]/70 via-white to-transparent">
         <div className="max-w-5xl mx-auto text-center space-y-5">

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
+import SEO from '../components/common/SEO';
 import { getStatusBadgeClass, formatDate } from '../utils/helpers';
 import {
   Building2,
@@ -40,6 +41,7 @@ export default function EmployerDashboard() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <SEO title="Employer Dashboard | CA Dwar" noindex={true} />
       {/* Top Banner with Company Verification Status */}
       <div className="bg-white border border-[#DCE5ED] rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
         <div className="flex items-start gap-4">
