@@ -33,7 +33,7 @@ export default async function handler(req, res) {
     });
 
     const adminUser = await User.create({
-      name: 'CA Setu Admin',
+      name: 'CA Dwar Admin',
       email: 'admin@casetu.com',
       password: 'adminpassword123',
       role: 'admin',

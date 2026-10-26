@@ -205,7 +205,7 @@ export default function Home() {
               </h2>
             </div>
             <p className="text-sm text-slate-600 mt-0.5">
-              Hand-picked openings from CA Setu Verified firms and leading corporations.
+              Hand-picked openings from CA Dwar Verified firms and leading corporations.
             </p>
           </div>
 
@@ -229,10 +229,10 @@ export default function Home() {
         <div className="bg-[#173B63] rounded-3xl p-8 sm:p-12 text-white">
           <div className="max-w-3xl mx-auto text-center space-y-4 mb-10">
             <span className="text-xs font-bold uppercase tracking-wider text-[#EEF6FC] bg-white/10 px-3 py-1 rounded-full">
-              The CA Setu Advantage
+              The CA Dwar Advantage
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
-              Why CA Aspirants & Firms Choose CA Setu
+              Why CA Aspirants & Firms Choose CA Dwar
             </h2>
             <p className="text-sm sm:text-base text-slate-300">
               Generic job boards don't understand attempts, groups cleared, or ICAI transfer guidelines. We built an intentional platform just for our fraternity.
@@ -280,7 +280,7 @@ export default function Home() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-[#173B63]">
-              Hiring Partners on CA Setu
+              Hiring Partners on CA Dwar
             </h2>
             <p className="text-sm text-slate-600 mt-0.5">
               Leading national audit networks, corporate conglomerates, and investment banks.

@@ -36,11 +36,11 @@ export default function Header() {
           <div className="flex items-center gap-8">
             <Link to="/" className="flex items-center gap-2.5 group">
               <div className="w-9 h-9 rounded-lg bg-[#173B63] flex items-center justify-center text-white font-bold text-lg shadow-sm group-hover:bg-[#176FA8] transition-colors">
-                CS
+                CD
               </div>
               <div className="flex flex-col">
                 <span className="font-extrabold text-xl tracking-tight text-[#173B63] leading-none">
-                  CA Setu
+                  CA Dwar
                 </span>
                 <span className="text-[10px] uppercase font-semibold tracking-wider text-[#176FA8] mt-0.5">
                   CA Career Marketplace

@@ -89,7 +89,7 @@ export default function EmployerDashboard() {
         <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3 text-xs text-amber-800">
           <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <p className="font-bold">Firm Credentials Under Review by CA Setu Admin</p>
+            <p className="font-bold">Firm Credentials Under Review by CA Dwar Admin</p>
             <p className="text-amber-700">
               Your Firm Registration Certificate is currently in the verification queue. You can save job drafts, and listings will be published as soon as verification completes.
             </p>
@@ -137,7 +137,7 @@ export default function EmployerDashboard() {
             {company.isVerified ? 'Active ✓' : 'Pending'}
           </div>
           <p className="text-[11px] text-emerald-600 font-medium">
-            {company.isVerified ? 'CA Setu Verified Partner' : 'Verification underway'}
+            {company.isVerified ? 'CA Dwar Verified Partner' : 'Verification underway'}
           </p>
         </div>
       </div>

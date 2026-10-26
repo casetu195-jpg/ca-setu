@@ -69,11 +69,11 @@ export default function Register() {
         <div className="text-center space-y-2">
           <Link to="/" className="inline-flex items-center gap-2">
             <div className="w-10 h-10 rounded-xl bg-[#173B63] flex items-center justify-center text-white font-bold text-xl">
-              CS
+              CD
             </div>
           </Link>
           <h1 className="text-2xl font-extrabold text-[#173B63]">
-            Create Your CA Setu Account
+            Create Your CA Dwar Account
           </h1>
           <p className="text-sm text-slate-600">
             Join India's dedicated career network for the CA fraternity.

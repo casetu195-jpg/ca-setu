@@ -41,7 +41,7 @@ export async function applyToJob(req, res, next) {
       resumeUrl: profile?.resumeUrl || '',
       status: 'Applied',
       statusHistory: [
-        { status: 'Applied', note: 'Application submitted on CA Setu portal' },
+        { status: 'Applied', note: 'Application submitted on CA Dwar portal' },
       ],
     });
 

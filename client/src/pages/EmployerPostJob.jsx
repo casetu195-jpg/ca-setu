@@ -111,7 +111,7 @@ export default function EmployerPostJob() {
       asDraft
         ? 'Job saved as draft successfully!'
         : company.isVerified
-        ? 'Opportunity published live on CA Setu!'
+        ? 'Opportunity published live on CA Dwar!'
         : 'Job submitted for Admin review!'
     );
 

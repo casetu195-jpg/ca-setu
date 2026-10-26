@@ -165,7 +165,7 @@ export function JobProvider({ children }) {
       coverNote: coverNote || '',
       resumeUrl: student.resumeUrl || 'https://casetu.com/resumes/default-resume.pdf',
       statusHistory: [
-        { status: 'Applied', date: new Date().toISOString(), note: 'Application submitted successfully on CA Setu' },
+        { status: 'Applied', date: new Date().toISOString(), note: 'Application submitted successfully on CA Dwar' },
       ],
     };
 

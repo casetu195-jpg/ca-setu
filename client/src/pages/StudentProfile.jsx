@@ -155,7 +155,7 @@ export default function StudentProfile() {
           </div>
         </div>
 
-        {/* Card 2: CA Academic Record (Crucial for CA Setu) */}
+        {/* Card 2: CA Academic Record (Crucial for CA Dwar) */}
         <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-bold text-[#173B63] flex items-center gap-2">

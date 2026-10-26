@@ -34,7 +34,7 @@ export default function AdminCompanies() {
             CA Firm & Corporate KYC Verification
           </h1>
           <p className="text-sm text-slate-600">
-            Grant or revoke the official "✓ CA Setu Verified" badge by cross-verifying ICAI Firm Registration Numbers.
+            Grant or revoke the official "✓ CA Dwar Verified" badge by cross-verifying ICAI Firm Registration Numbers.
           </p>
         </div>
       </div>

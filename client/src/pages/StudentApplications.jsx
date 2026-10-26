@@ -21,7 +21,7 @@ export default function StudentApplications() {
           <span>Application Tracker</span>
         </div>
         <h1 className="text-2xl font-extrabold text-[#173B63] mt-1">
-          My CA Setu Applications
+          My CA Dwar Applications
         </h1>
         <p className="text-sm text-slate-600">
           Real-time visibility into hiring statuses across all your submitted articleship and industrial training applications.

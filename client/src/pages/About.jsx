@@ -11,10 +11,10 @@ export default function About() {
           Our Mission & Vision
         </span>
         <h1 className="text-3xl sm:text-5xl font-extrabold text-[#173B63] tracking-tight">
-          "Your Bridge to the Right CA Career."
+          "Your Gateway to the Right CA Career."
         </h1>
         <p className="text-base text-slate-600 leading-relaxed">
-          CA Setu was created to replace the chaos of unverified WhatsApp forwarding groups, unsolicited LinkedIn cold messages, and informal nepotism with a structured, verified career platform designed exclusively for the Indian CA fraternity.
+          CA Dwar was created to replace the chaos of unverified WhatsApp forwarding groups, unsolicited LinkedIn cold messages, and informal nepotism with a structured, verified career platform designed exclusively for the Indian CA fraternity.
         </p>
       </div>
 
@@ -57,7 +57,7 @@ export default function About() {
           Regulatory Awareness Notice
         </strong>
         <p>
-          CA Setu is an independent private career marketplace built by professionals for the Chartered Accountancy community. It is not affiliated, officially associated, or endorsed by The Institute of Chartered Accountants of India (ICAI). All trademarks and registered names belong to their respective owners.
+          CA Dwar is an independent private career marketplace built by professionals for the Chartered Accountancy community. It is not affiliated, officially associated, or endorsed by The Institute of Chartered Accountants of India (ICAI). All trademarks and registered names belong to their respective owners.
         </p>
       </div>
     </div>

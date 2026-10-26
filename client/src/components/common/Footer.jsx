@@ -11,14 +11,14 @@ export default function Footer() {
           <div className="lg:col-span-2 space-y-4">
             <Link to="/" className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-lg bg-[#173B63] flex items-center justify-center text-white font-bold text-lg">
-                CS
+                CD
               </div>
               <span className="font-extrabold text-2xl tracking-tight text-[#173B63]">
-                CA Setu
+                CA Dwar
               </span>
             </Link>
             <p className="text-sm text-slate-600 max-w-sm leading-relaxed">
-              <strong>"Your Bridge to the Right CA Career."</strong><br />
+              <strong>"Your Gateway to the Right CA Career."</strong><br />
               India's specialized career marketplace built exclusively for CA students and finance professionals. Connecting talent with verified firms across Articleship, Industrial Training, and CA Jobs.
             </p>
             <div className="flex items-center gap-3 pt-2">
@@ -110,7 +110,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/about" className="hover:text-[#176FA8]">
-                  About CA Setu
+                  About CA Dwar
                 </Link>
               </li>
               <li>
@@ -125,10 +125,10 @@ export default function Footer() {
         {/* ICAI Disclaimer & Legal */}
         <div className="pt-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <p>
-            &copy; {new Date().getFullYear()} CA Setu Technologies. All rights reserved.
+            &copy; {new Date().getFullYear()} CA Dwar Technologies. All rights reserved.
           </p>
           <p className="text-center md:text-right max-w-xl">
-            <strong>Disclaimer:</strong> CA Setu is an independent career platform and is not affiliated, associated, authorized, or endorsed by The Institute of Chartered Accountants of India (ICAI).
+            <strong>Disclaimer:</strong> CA Dwar is an independent career platform and is not affiliated, associated, authorized, or endorsed by The Institute of Chartered Accountants of India (ICAI).
           </p>
         </div>
       </div>

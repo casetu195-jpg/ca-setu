@@ -71,7 +71,7 @@ const healthHandler = (req, res) => {
   const isDbConnected = mongoose.connection.readyState === 1;
   res.json({
     status: 'ok',
-    message: 'CA Setu API Gateway Operational',
+    message: 'CA Dwar API Gateway Operational',
     database: isDbConnected ? 'connected' : 'disconnected',
     databaseHost: isDbConnected ? mongoose.connection.host : null,
     databaseState: isDbConnected
@@ -85,7 +85,7 @@ const healthHandler = (req, res) => {
 
 app.get('/api/health', healthHandler);
 app.get('/health', healthHandler);
-app.get('/api', (req, res) => res.json({ status: 'ok', message: 'CA Setu API Serverless Gateway' }));
+app.get('/api', (req, res) => res.json({ status: 'ok', message: 'CA Dwar API Serverless Gateway' }));
 
 // Mount Core API Routes (both with /api prefix and relative mount)
 app.use('/api/auth', authRoutes);
@@ -103,7 +103,7 @@ app.use(errorHandler);
 if (!process.env.VERCEL && process.env.NODE_ENV !== 'test') {
   app.listen(PORT, () => {
     console.log(`\n======================================================`);
-    console.log(`🚀 [CA Setu Server] Running on Port ${PORT}`);
+    console.log(`🚀 [CA Dwar Server] Running on Port ${PORT}`);
     console.log(`🎯 [Status] Ready to accept API requests from Client`);
     console.log(`======================================================\n`);
   });

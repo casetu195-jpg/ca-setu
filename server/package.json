@@ -1,7 +1,7 @@
 {
   "name": "ca-setu-server",
   "version": "1.0.0",
-  "description": "CA Setu Backend API - Specialized Career Marketplace for Chartered Accountants",
+  "description": "CA Dwar Backend API - Specialized Career Marketplace for Chartered Accountants",
   "main": "server.js",
   "type": "module",
   "scripts": {
@@ -9,8 +9,8 @@
     "dev": "node --watch server.js",
     "seed": "node seed.js"
   },
-  "keywords": ["ca-setu", "ca", "articleship", "industrial-training", "mern"],
-  "author": "CA Setu Team",
+  "keywords": ["ca-dwar", "ca-setu", "ca", "articleship", "industrial-training", "mern"],
+  "author": "CA Dwar Team",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",

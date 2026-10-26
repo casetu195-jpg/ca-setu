@@ -37,7 +37,7 @@ export default function AdminDashboard() {
             </span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            CA Setu Administration Operations
+            CA Dwar Administration Operations
           </h1>
           <p className="text-sm text-slate-300 max-w-xl">
             Authenticate ICAI Firm Registration Numbers (FRN), approve job postings, and safeguard marketplace integrity.

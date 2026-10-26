@@ -14,7 +14,7 @@ export default function Contact() {
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-8">
       <div className="text-center space-y-2 max-w-xl mx-auto">
         <h1 className="text-3xl font-extrabold text-[#173B63]">
-          Contact CA Setu Support
+          Contact CA Dwar Support
         </h1>
         <p className="text-sm text-slate-600">
           Have questions regarding CA firm verification, job moderation, or partnership opportunities? Reach out to our team.
@@ -31,7 +31,7 @@ export default function Contact() {
               <Mail className="w-4 h-4 text-[#EEF6FC] mt-0.5" />
               <div>
                 <strong className="block text-white">General & Verification Email</strong>
-                <span className="text-slate-300">support@casetu.com</span>
+                <span className="text-slate-300">support@cadwar.in</span>
               </div>
             </div>
 
@@ -60,7 +60,7 @@ export default function Contact() {
               <CheckCircle2 className="w-12 h-12 text-[#16805C] mx-auto" />
               <h3 className="text-lg font-bold text-[#173B63]">Inquiry Dispatched</h3>
               <p className="text-xs text-slate-600 max-w-sm mx-auto">
-                Thank you for getting in touch. A CA Setu operations representative will follow up via email within 24 business hours.
+                Thank you for getting in touch. A CA Dwar operations representative will follow up via email within 24 business hours.
               </p>
             </div>
           ) : (

@@ -14,7 +14,7 @@ export async function connectDB() {
   const mongoURI = process.env.MONGO_URI;
 
   if (!mongoURI) {
-    console.warn('⚠️ [CA Setu Backend] MONGO_URI is not set in environment variables.');
+    console.warn('⚠️ [CA Dwar Backend] MONGO_URI is not set in environment variables.');
     return null;
   }
 

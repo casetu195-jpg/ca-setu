@@ -1,7 +1,7 @@
 {
   "name": "ca-setu",
   "version": "1.0.0",
-  "description": "CA Setu - Specialized Career Marketplace for Chartered Accountants",
+  "description": "CA Dwar - Specialized Career Marketplace for Chartered Accountants",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,12 +12,13 @@
   },
   "keywords": [
     "ca-setu",
+    "ca-dwar",
     "ca",
     "articleship",
     "industrial-training",
     "mern"
   ],
-  "author": "CA Setu Team",
+  "author": "CA Dwar Team",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",

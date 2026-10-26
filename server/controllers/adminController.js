@@ -58,7 +58,7 @@ export async function verifyCompany(req, res, next) {
     res.json({
       success: true,
       message: isVerified
-        ? 'Company verified successfully with CA Setu trust badge.'
+        ? 'Company verified successfully with CA Dwar trust badge.'
         : 'Company verification revoked.',
       company,
     });

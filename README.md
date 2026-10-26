@@ -1,6 +1,6 @@
-# CA Setu — Production README & Deployment Guide
+# CA Dwar — Production README & Deployment Guide
 
-> **"Your Bridge to the Right CA Career."**  
+> **"Your Gateway to the Right CA Career."**  
 > A specialized career marketplace engineered exclusively for the Indian Chartered Accountancy community. Connecting CA Intermediate, CA Final, and Qualified CAs with verified CA firms and corporate employers.
 
 ---
@@ -41,7 +41,7 @@ To test the full user journeys immediately without manual signups, navigate to `
 | :--- | :--- | :--- | :--- |
 | **Student** | `aman.sharma@casetu.com` | `demo123` | CA Final profile, 1-click apply, duplicate application checks, and live status tracking (`/student/dashboard`). |
 | **Employer** | `hiring@motilaloswal.com` | `demo123` | Post vacancies, pause/close listings, and screen candidates across the recruitment pipeline (`/employer/dashboard`). |
-| **Admin** | `admin@casetu.com` | `demo123` | Moderate pending job listings and award the **✓ CA Setu Verified** badge (`/admin/dashboard`). |
+| **Admin** | `admin@casetu.com` | `demo123` | Moderate pending job listings and award the **✓ CA Dwar Verified** badge (`/admin/dashboard`). |
 
 ---
 

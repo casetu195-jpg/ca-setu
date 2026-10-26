@@ -18,7 +18,7 @@ export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json');
   return res.status(200).json({
     status: 'ok',
-    message: 'CA Setu API Gateway Operational',
+    message: 'CA Dwar API Gateway Operational',
     hasMongoUri,
     database: isDbConnected ? 'connected' : 'disconnected',
     databaseHost: isDbConnected ? mongoose.connection.host : null,

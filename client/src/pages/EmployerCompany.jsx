@@ -48,7 +48,7 @@ export default function EmployerCompany() {
             CA Firm / Company Verification
           </h1>
           <p className="text-sm text-slate-600">
-            Submit your official ICAI Firm Registration Number (FRN) or Corporate CIN to receive the CA Setu Verified badge.
+            Submit your official ICAI Firm Registration Number (FRN) or Corporate CIN to receive the CA Dwar Verified badge.
           </p>
         </div>
 
@@ -73,7 +73,7 @@ export default function EmployerCompany() {
         <ShieldCheck className="w-5 h-5 text-[#176FA8] shrink-0 mt-0.5" />
         <div className="space-y-1">
           <strong className="text-[#173B63] block font-bold">
-            CA Setu Marketplace Trust Standard (Rule BR-01 & BR-02)
+            CA Dwar Marketplace Trust Standard (Rule BR-01 & BR-02)
           </strong>
           <p className="text-slate-600 leading-relaxed">
             To protect CA students from fraudulent postings and unverified entities, only CA firms and registered corporate entities with a verified FRN or CIN can publish vacancies. Badges are granted solely by platform administrators.
@@ -203,7 +203,7 @@ export default function EmployerCompany() {
                   : 'Upload Certificate of Constitution / MCA Incorporation Certificate'}
               </p>
               <p className="text-xs text-slate-500 mt-1">
-                PDF or Scanned Copy · Inspected manually by CA Setu operations
+                PDF or Scanned Copy · Inspected manually by CA Dwar operations
               </p>
             </div>
             <label className="inline-block px-4 py-2 bg-white border border-[#DCE5ED] hover:bg-slate-50 text-[#173B63] font-semibold rounded-xl text-xs cursor-pointer shadow-2xs transition-colors">
