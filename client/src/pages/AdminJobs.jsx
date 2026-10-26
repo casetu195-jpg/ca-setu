@@ -1,10 +1,30 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useJobs } from '../context/JobContext';
 import { formatStipend, getStatusBadgeClass } from '../utils/helpers';
-import { Briefcase, CheckCircle, XCircle, Sparkles, Search, PauseCircle, PlayCircle } from 'lucide-react';
+import {
+  Briefcase,
+  CheckCircle,
+  XCircle,
+  Sparkles,
+  Search,
+  PauseCircle,
+  PlayCircle,
+  PlusCircle,
+  Edit3,
+  Trash2,
+} from 'lucide-react';
 
 export default function AdminJobs() {
-  const { jobs, companies, adminApproveJob, adminRejectJob, adminToggleFeature, updateJobStatus } = useJobs();
+  const {
+    jobs,
+    companies,
+    adminApproveJob,
+    adminRejectJob,
+    adminToggleFeature,
+    updateJobStatus,
+    deleteJob,
+  } = useJobs();
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState('all');
 
@@ -14,7 +34,12 @@ export default function AdminJobs() {
     if (filter === 'featured' && !j.isFeatured) return false;
     if (query) {
       const q = query.toLowerCase();
-      return j.title.toLowerCase().includes(q) || j.domain.toLowerCase().includes(q) || j.city.toLowerCase().includes(q);
+      return (
+        j.title.toLowerCase().includes(q) ||
+        (j.companyName || '').toLowerCase().includes(q) ||
+        j.domain.toLowerCase().includes(q) ||
+        j.city.toLowerCase().includes(q)
+      );
     }
     return true;
   });
@@ -34,6 +59,14 @@ export default function AdminJobs() {
             Ensure all articleship and CA vacancies comply with ICAI minimum stipend norms and anti-spam rules.
           </p>
         </div>
+
+        <Link
+          to="/employer/post-job"
+          className="px-4 py-2.5 bg-[#173B63] hover:bg-[#176FA8] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 self-start sm:self-center"
+        >
+          <PlusCircle className="w-4 h-4" />
+          <span>Post New Opportunity</span>
+        </Link>
       </div>
 
       {/* Filter and Search */}
@@ -110,6 +143,9 @@ export default function AdminJobs() {
                         </span>
                       )}
                     </div>
+                    <span className="text-xs font-semibold text-[#173B63] block mt-0.5">
+                      {j.companyName || (companies.find((c) => c.id === j.companyId)?.name) || 'CA Firm'}
+                    </span>
                     <span className="text-[11px] text-slate-400">
                       Eligibility: {j.eligibility}
                     </span>
@@ -135,27 +171,41 @@ export default function AdminJobs() {
                     </span>
                   </td>
 
-                  <td className="px-5 py-4 text-right space-x-2">
+                  <td className="px-5 py-4 text-right space-x-1.5 whitespace-nowrap">
+                    {/* Approve / Pause */}
                     {j.status !== 'Published' ? (
                       <button
                         onClick={() => adminApproveJob(j.id)}
-                        className="px-3 py-1 bg-[#173B63] hover:bg-[#176FA8] text-white rounded-lg text-xs font-bold shadow-2xs"
+                        className="px-2.5 py-1 bg-[#173B63] hover:bg-[#176FA8] text-white rounded-lg text-xs font-bold shadow-2xs"
+                        title="Approve & Publish live"
                       >
                         Approve
                       </button>
                     ) : (
                       <button
                         onClick={() => updateJobStatus(j.id, 'Paused')}
-                        className="px-3 py-1 border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold"
+                        className="px-2.5 py-1 border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold"
+                        title="Pause applications"
                       >
                         Pause
                       </button>
                     )}
 
+                    {/* Edit Posting */}
+                    <Link
+                      to={`/employer/post-job?edit=${j.id}`}
+                      className="px-2 py-1 border border-slate-200 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold inline-flex items-center gap-1"
+                      title="Edit Opportunity Details"
+                    >
+                      <Edit3 className="w-3.5 h-3.5 text-slate-600" />
+                      <span>Edit</span>
+                    </Link>
+
+                    {/* Feature Placement Toggle */}
                     <button
                       onClick={() => adminToggleFeature(j.id)}
                       title="Toggle Featured placement"
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold border ${
+                      className={`px-2 py-1 rounded-lg text-xs font-bold border ${
                         j.isFeatured
                           ? 'bg-amber-100 text-amber-800 border-amber-300'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-100'
@@ -164,14 +214,29 @@ export default function AdminJobs() {
                       <Sparkles className="w-3.5 h-3.5 inline" />
                     </button>
 
+                    {/* Reject */}
                     {j.status !== 'Rejected' && (
                       <button
                         onClick={() => adminRejectJob(j.id)}
-                        className="px-2.5 py-1 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold"
+                        className="px-2 py-1 border border-amber-200 text-amber-700 hover:bg-amber-50 rounded-lg text-xs font-semibold"
+                        title="Reject Opportunity"
                       >
                         Reject
                       </button>
                     )}
+
+                    {/* Permanent Delete */}
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Permanently delete vacancy "${j.title}"?`)) {
+                          deleteJob(j.id);
+                        }
+                      }}
+                      className="px-2 py-1 border border-rose-200 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-semibold inline-flex items-center"
+                      title="Delete Posting Permanently"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </td>
                 </tr>
               ))}

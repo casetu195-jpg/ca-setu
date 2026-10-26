@@ -5,7 +5,11 @@ const jobSchema = new mongoose.Schema(
     companyId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Company',
-      required: true,
+      index: true,
+    },
+    companyName: {
+      type: String,
+      trim: true,
       index: true,
     },
     title: {
@@ -99,6 +103,18 @@ const jobSchema = new mongoose.Schema(
     postedTime: {
       type: String,
       default: 'Recently',
+    },
+    applicationLink: {
+      type: String,
+      trim: true,
+    },
+    recruiterEmail: {
+      type: String,
+      trim: true,
+    },
+    sourceUrl: {
+      type: String,
+      trim: true,
     },
     publishedAt: Date,
     expiresAt: Date,

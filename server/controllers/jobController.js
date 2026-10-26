@@ -19,6 +19,7 @@ export async function getJobs(req, res, next) {
     if (q) {
       query.$or = [
         { title: new RegExp(q, 'i') },
+        { companyName: new RegExp(q, 'i') },
         { domain: new RegExp(q, 'i') },
         { description: new RegExp(q, 'i') },
       ];
@@ -54,21 +55,40 @@ export async function getJobById(req, res, next) {
   }
 }
 
-// @desc    Create new job posting (Employer only)
+// @desc    Create new job posting (Employer or Admin)
 // @route   POST /api/jobs
-// @access  Private (Employer)
+// @access  Private (Employer / Admin)
 export async function createJob(req, res, next) {
   try {
-    const company = await Company.findOne({ userId: req.user._id });
-    if (!company) {
-      return res.status(400).json({ success: false, message: 'No registered company found for this employer' });
+    const isAdmin = req.user.role === 'admin';
+    let company = await Company.findOne({ userId: req.user._id });
+
+    const rawCompanyName = (req.body.companyName || company?.name || '').trim();
+    if (!rawCompanyName) {
+      return res.status(400).json({ success: false, message: 'Company / Firm Name is required.' });
+    }
+
+    // If company not found for user (e.g. Admin posting on behalf of a firm), find or create company record
+    if (!company || (isAdmin && req.body.companyName && req.body.companyName !== company.name)) {
+      company = await Company.findOne({ name: new RegExp(`^${rawCompanyName}$`, 'i') });
+      if (!company) {
+        company = await Company.create({
+          userId: req.user._id,
+          name: rawCompanyName,
+          firmType: 'CA Firm / Corporate',
+          registrationNumber: 'VERIFIED-PARTNER',
+          city: req.body.city || 'Mumbai',
+          address: 'India',
+          isVerified: true,
+        });
+      }
     }
 
     const jobData = {
       ...req.body,
       companyId: company._id,
-      // If company is verified, can go to Published or Pending Review
-      status: company.isVerified ? 'Published' : 'Pending Review',
+      companyName: rawCompanyName,
+      status: isAdmin ? (req.body.status || 'Published') : (company.isVerified ? 'Published' : 'Pending Review'),
     };
 
     const job = await Job.create(jobData);
@@ -78,7 +98,7 @@ export async function createJob(req, res, next) {
   }
 }
 
-// @desc    Update job status (Pause, Close, Draft)
+// @desc    Update job status (Pause, Close, Draft) or edit details
 // @route   PUT /api/jobs/:id
 // @access  Private (Employer / Admin)
 export async function updateJob(req, res, next) {
@@ -88,12 +108,45 @@ export async function updateJob(req, res, next) {
       return res.status(404).json({ success: false, message: 'Job not found' });
     }
 
+    // Non-admin can only update their own company's jobs
+    if (req.user.role !== 'admin') {
+      const company = await Company.findOne({ userId: req.user._id });
+      if (!company || String(job.companyId) !== String(company._id)) {
+        return res.status(403).json({ success: false, message: 'Not authorized to update this job' });
+      }
+    }
+
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true,
     });
 
     res.json({ success: true, job });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// @desc    Delete job posting
+// @route   DELETE /api/jobs/:id
+// @access  Private (Employer / Admin)
+export async function deleteJob(req, res, next) {
+  try {
+    const job = await Job.findById(req.params.id);
+    if (!job) {
+      return res.status(404).json({ success: false, message: 'Job vacancy not found' });
+    }
+
+    // Admins can delete any job; Employers can only delete their own
+    if (req.user.role !== 'admin') {
+      const company = await Company.findOne({ userId: req.user._id });
+      if (!company || String(job.companyId) !== String(company._id)) {
+        return res.status(403).json({ success: false, message: 'Not authorized to delete this job' });
+      }
+    }
+
+    await Job.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Job deleted successfully' });
   } catch (error) {
     next(error);
   }

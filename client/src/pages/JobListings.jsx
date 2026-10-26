@@ -91,9 +91,10 @@ export default function JobListings() {
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
           const matchTitle = job.title.toLowerCase().includes(q);
+          const matchCompany = (job.companyName || '').toLowerCase().includes(q);
           const matchDomain = job.domain.toLowerCase().includes(q);
           const matchDesc = job.description.toLowerCase().includes(q);
-          if (!matchTitle && !matchDomain && !matchDesc) return false;
+          if (!matchTitle && !matchCompany && !matchDomain && !matchDesc) return false;
         }
 
         // City filter

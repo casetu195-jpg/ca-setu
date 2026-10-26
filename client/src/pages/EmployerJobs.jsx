@@ -3,11 +3,21 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import { formatStipend, getStatusBadgeClass } from '../utils/helpers';
-import { Briefcase, PlusCircle, Users, PauseCircle, PlayCircle, XCircle, ExternalLink } from 'lucide-react';
+import {
+  Briefcase,
+  PlusCircle,
+  Users,
+  PauseCircle,
+  PlayCircle,
+  XCircle,
+  ExternalLink,
+  Edit3,
+  Trash2,
+} from 'lucide-react';
 
 export default function EmployerJobs() {
   const { user } = useAuth();
-  const { jobs, companies, updateJobStatus } = useJobs();
+  const { jobs, companies, updateJobStatus, deleteJob } = useJobs();
 
   const company =
     companies.find((c) => c.id === user?.companyId) || companies[0];
@@ -133,6 +143,26 @@ export default function EmployerJobs() {
                     <span>Close</span>
                   </button>
                 )}
+
+                <Link
+                  to={`/employer/post-job?edit=${job.id}`}
+                  className="p-2 text-slate-500 hover:text-[#176FA8]"
+                  title="Edit Opportunity"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </Link>
+
+                <button
+                  onClick={() => {
+                    if (window.confirm(`Permanently delete vacancy "${job.title}"?`)) {
+                      deleteJob(job.id);
+                    }
+                  }}
+                  className="p-2 text-slate-500 hover:text-rose-600"
+                  title="Delete Opportunity"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
 
                 <Link
                   to={`/jobs/${job.id}`}

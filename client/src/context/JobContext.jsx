@@ -230,6 +230,29 @@ export function JobProvider({ children }) {
     );
   };
 
+  // Delete Job
+  const deleteJob = async (jobId) => {
+    try {
+      await jobsAPI.deleteJob(jobId);
+    } catch {}
+    setJobs((prev) => prev.filter((j) => j.id !== jobId && j._id !== jobId));
+  };
+
+  // Edit Job Details
+  const editJob = async (jobId, updatedData) => {
+    try {
+      const res = await jobsAPI.updateJob(jobId, updatedData);
+      if (res.data?.success && res.data.job) {
+        const updated = { ...res.data.job, id: res.data.job._id || res.data.job.id };
+        setJobs((prev) => prev.map((j) => (j.id === jobId || j._id === jobId ? updated : j)));
+        return updated;
+      }
+    } catch {}
+    setJobs((prev) =>
+      prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, ...updatedData } : j))
+    );
+  };
+
   // Admin Job Operations
   const adminApproveJob = async (jobId) => {
     try {
@@ -315,6 +338,8 @@ export function JobProvider({ children }) {
         hasApplied,
         postNewJob,
         updateJobStatus,
+        deleteJob,
+        editJob,
         adminApproveJob,
         adminRejectJob,
         adminToggleFeature,

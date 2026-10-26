@@ -4,6 +4,7 @@ import {
   getJobById,
   createJob,
   updateJob,
+  deleteJob,
 } from '../controllers/jobController.js';
 import { protect, authorize } from '../middleware/auth.js';
 
@@ -13,5 +14,6 @@ router.get('/', getJobs);
 router.get('/:id', getJobById);
 router.post('/', protect, authorize('employer', 'admin'), createJob);
 router.put('/:id', protect, authorize('employer', 'admin'), updateJob);
+router.delete('/:id', protect, authorize('employer', 'admin'), deleteJob);
 
 export default router;

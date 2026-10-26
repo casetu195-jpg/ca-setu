@@ -51,13 +51,15 @@ export default function JobDetails() {
   }
 
   const company = getCompanyById(job.companyId) || {
-    name: 'Verified CA Firm',
+    name: job.companyName || 'Verified CA Firm',
     isVerified: true,
     city: job.city,
     description: 'Prominent financial services & accounting firm.',
     address: 'Mumbai, India',
     website: 'https://casetu.com',
   };
+
+  const displayName = job.companyName || company.name;
 
   const isSaved = isJobSaved(job.id);
   const alreadyApplied = hasApplied(job.id, user?.id, user?.email);
@@ -113,8 +115,8 @@ export default function JobDetails() {
                   }}
                 />
               ) : null}
-              <span className={company.logo ? 'hidden' : 'block'}>
-                {company.initials || company.name.substring(0, 2).toUpperCase()}
+              <span className={company.logo && !job.companyName ? 'hidden' : 'block'}>
+                {displayName.substring(0, 2).toUpperCase()}
               </span>
             </div>
 
@@ -131,12 +133,9 @@ export default function JobDetails() {
               </h1>
 
               <div className="flex items-center flex-wrap gap-3 text-sm text-slate-600">
-                <Link
-                  to={`/companies/${company.id}`}
-                  className="font-semibold text-slate-800 hover:text-[#176FA8] transition-colors"
-                >
-                  {company.name}
-                </Link>
+                <span className="font-bold text-slate-900">
+                  {displayName}
+                </span>
                 <span>·</span>
                 <span className="flex items-center gap-1">
                   <MapPin className="w-4 h-4 text-slate-400" />
@@ -159,6 +158,27 @@ export default function JobDetails() {
             >
               <Share2 className="w-4 h-4" />
             </button>
+            {job.applicationLink && (
+              <a
+                href={job.applicationLink}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Apply on Official Portal</span>
+              </a>
+            )}
+            {job.recruiterEmail && (
+              <a
+                href={`mailto:${job.recruiterEmail}?subject=Application for ${job.title}`}
+                className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 truncate px-2"
+                title={`Email CV to ${job.recruiterEmail}`}
+              >
+                <span className="truncate">Email CV: {job.recruiterEmail}</span>
+              </a>
+            )}
+
             <button
               onClick={() => toggleSaveJob(job.id)}
               title={isSaved ? 'Saved' : 'Save'}
@@ -338,6 +358,27 @@ export default function JobDetails() {
                 <Send className="w-4 h-4" />
                 <span>Apply for Opportunity</span>
               </button>
+            )}
+
+            {job.applicationLink && (
+              <a
+                href={job.applicationLink}
+                target="_blank"
+                rel="noreferrer"
+                className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Apply on Official Portal</span>
+              </a>
+            )}
+            {job.recruiterEmail && (
+              <a
+                href={`mailto:${job.recruiterEmail}?subject=Application for ${job.title}`}
+                className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 truncate px-2"
+                title={`Email CV to ${job.recruiterEmail}`}
+              >
+                <span className="truncate">Email CV: {job.recruiterEmail}</span>
+              </a>
             )}
 
             <button

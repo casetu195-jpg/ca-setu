@@ -1,19 +1,34 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import { initialCities, initialDomains } from '../services/mockData';
-import { PlusCircle, Save, Send, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { parseLinkedInPost } from '../utils/linkedInParser';
+import {
+  PlusCircle,
+  Save,
+  Send,
+  AlertCircle,
+  CheckCircle2,
+  Sparkles,
+  Link as LinkIcon,
+  RotateCcw,
+  Edit3,
+} from 'lucide-react';
 
 export default function EmployerPostJob() {
   const { user } = useAuth();
-  const { postNewJob, companies } = useJobs();
+  const { postNewJob, editJob, jobs, companies } = useJobs();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const editId = searchParams.get('edit');
 
-  const company =
+  const isAdmin = user?.role === 'admin';
+  const defaultCompany =
     companies.find((c) => c.id === user?.companyId) || companies[0];
 
   const [formData, setFormData] = useState({
+    companyName: defaultCompany?.name || '',
     title: '',
     category: 'articleship',
     domain: 'Statutory Audit & Assurance',
@@ -30,11 +45,56 @@ export default function EmployerPostJob() {
     description: '',
     responsibilitiesText: '',
     skillsText: '',
+    applicationLink: '',
+    recruiterEmail: '',
     isFeatured: false,
   });
 
+  const [isEditing, setIsEditing] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // LinkedIn Quick Import State (Admin Only)
+  const [linkedInText, setLinkedInText] = useState('');
+  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [linkedInNotice, setLinkedInNotice] = useState(null);
+
+  // If in edit mode, populate existing job data
+  useEffect(() => {
+    if (editId && jobs && jobs.length > 0) {
+      const existing = jobs.find((j) => j.id === editId || j._id === editId);
+      if (existing) {
+        setIsEditing(true);
+        const comp = companies.find((c) => c.id === existing.companyId);
+        setFormData({
+          companyName: existing.companyName || comp?.name || '',
+          title: existing.title || '',
+          category: existing.category || 'articleship',
+          domain: existing.domain || 'Statutory Audit & Assurance',
+          city: existing.city || 'Mumbai',
+          workMode: existing.workMode || 'On-site',
+          stipendMin: existing.stipendMin || 15000,
+          stipendMax: existing.stipendMax || 25000,
+          stipendPeriod: existing.stipendPeriod || 'Monthly',
+          openVacancies: existing.openVacancies || 1,
+          requiredGroups: existing.requiredGroups || 'Both Groups',
+          attempts: existing.attempts || 'Any',
+          eligibility: existing.eligibility || '',
+          deadline: existing.deadline || '15 days left',
+          description: existing.description || '',
+          responsibilitiesText: Array.isArray(existing.responsibilities)
+            ? existing.responsibilities.join('\n')
+            : '',
+          skillsText: Array.isArray(existing.requiredSkills)
+            ? existing.requiredSkills.join(', ')
+            : '',
+          applicationLink: existing.applicationLink || '',
+          recruiterEmail: existing.recruiterEmail || '',
+          isFeatured: existing.isFeatured || false,
+        });
+      }
+    }
+  }, [editId, jobs, companies]);
 
   const domainsList =
     formData.category === 'articleship'
@@ -70,10 +130,57 @@ export default function EmployerPostJob() {
     }));
   };
 
-  const handleSubmit = (e, asDraft = false) => {
+  // LinkedIn Auto-Fill Action (Admin Only)
+  const handleLinkedInAutoFill = () => {
+    setError('');
+    setLinkedInNotice(null);
+
+    const result = parseLinkedInPost(linkedInText, linkedInUrl);
+    if (!result.success) {
+      setError(result.error);
+      return;
+    }
+
+    const { extracted, isCaRelated } = result;
+
+    setFormData((prev) => ({
+      ...prev,
+      ...extracted,
+      companyName: extracted.companyName || prev.companyName,
+    }));
+
+    if (!isCaRelated) {
+      setLinkedInNotice({
+        type: 'warning',
+        message:
+          'Warning: This post does not appear to mention CA Articleship, Industrial Training, or Qualified CA keywords. Please review the category and fields carefully.',
+      });
+    } else {
+      setLinkedInNotice({
+        type: 'success',
+        message:
+          'LinkedIn post parsed successfully! Fields have been auto-filled below. Please review before publishing.',
+      });
+    }
+  };
+
+  const handleClearImport = () => {
+    setLinkedInText('');
+    setLinkedInUrl('');
+    setLinkedInNotice(null);
+  };
+
+  const handleSubmit = async (e, asDraft = false) => {
     e.preventDefault();
+    setError('');
+
+    if (!formData.companyName || !formData.companyName.trim()) {
+      setError('Please provide a Company / Firm Name.');
+      return;
+    }
+
     if (!formData.title || !formData.description) {
-      setError('Please provide a job title and detailed role description.');
+      setError('Please provide an opportunity title and detailed role description.');
       return;
     }
 
@@ -91,48 +198,78 @@ export default function EmployerPostJob() {
           .filter(Boolean)
       : ['Accounting Principles', 'MS Excel', 'Ind AS'];
 
-    const newJob = postNewJob(
-      {
-        ...formData,
-        categoryName:
-          formData.category === 'articleship'
-            ? 'Articleship'
-            : formData.category === 'industrial-training'
-            ? 'Industrial Training'
-            : 'CA Jobs',
-        responsibilities,
-        requiredSkills,
-        status: asDraft ? 'Draft' : company.isVerified ? 'Published' : 'Pending Review',
-      },
-      company.id
-    );
+    const categoryName =
+      formData.category === 'articleship'
+        ? 'Articleship'
+        : formData.category === 'industrial-training'
+        ? 'Industrial Training'
+        : 'CA Jobs';
+
+    const payload = {
+      ...formData,
+      companyName: formData.companyName.trim(),
+      categoryName,
+      responsibilities,
+      requiredSkills,
+      status: asDraft
+        ? 'Draft'
+        : isAdmin
+        ? 'Published'
+        : defaultCompany?.isVerified
+        ? 'Published'
+        : 'Pending Review',
+    };
+
+    if (isEditing && editId) {
+      await editJob(editId, payload);
+      setSuccessMsg('Opportunity updated successfully!');
+      setTimeout(() => {
+        navigate(isAdmin ? '/admin/jobs' : '/employer/jobs');
+      }, 1000);
+      return;
+    }
+
+    await postNewJob(payload, defaultCompany?.id);
 
     setSuccessMsg(
       asDraft
         ? 'Job saved as draft successfully!'
-        : company.isVerified
+        : isAdmin
+        ? 'Opportunity published live on CA Dwar!'
+        : defaultCompany?.isVerified
         ? 'Opportunity published live on CA Dwar!'
         : 'Job submitted for Admin review!'
     );
 
     setTimeout(() => {
-      navigate('/employer/jobs');
+      navigate(isAdmin ? '/admin/jobs' : '/employer/jobs');
     }, 1200);
   };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
-      <div className="pb-6 border-b border-[#DCE5ED]">
-        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176FA8]">
-          <PlusCircle className="w-4 h-4" />
-          <span>Vacancy Creator</span>
+      {/* Header */}
+      <div className="pb-6 border-b border-[#DCE5ED] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176FA8]">
+            {isEditing ? <Edit3 className="w-4 h-4" /> : <PlusCircle className="w-4 h-4" />}
+            <span>{isEditing ? 'Opportunity Editor' : 'Vacancy Creator'}</span>
+          </div>
+          <h1 className="text-2xl font-extrabold text-[#173B63] mt-1">
+            {isEditing ? 'Edit Opportunity Listing' : 'Post an Opportunity for CA Aspirants'}
+          </h1>
+          <p className="text-sm text-slate-600">
+            {isEditing
+              ? 'Update opportunity details, stipend, or requirements.'
+              : 'Target students and finance professionals with structured CA fields.'}
+          </p>
         </div>
-        <h1 className="text-2xl font-extrabold text-[#173B63] mt-1">
-          Post an Opportunity for CA Aspirants
-        </h1>
-        <p className="text-sm text-slate-600">
-          Target students and finance professionals with structured CA fields.
-        </p>
+
+        {isAdmin && (
+          <span className="text-xs font-bold px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-full self-start sm:self-center">
+            Founder Admin Mode
+          </span>
+        )}
       </div>
 
       {error && (
@@ -149,14 +286,122 @@ export default function EmployerPostJob() {
         </div>
       )}
 
+      {/* ADMIN-ONLY: LinkedIn Quick Import Section */}
+      {isAdmin && !isEditing && (
+        <div className="bg-gradient-to-r from-blue-50/70 to-indigo-50/70 border border-[#176FA8]/30 rounded-2xl p-6 shadow-2xs space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#0077B5] text-white flex items-center justify-center font-bold text-xs">
+                in
+              </div>
+              <h2 className="text-base font-bold text-[#173B63]">
+                Quick Import – LinkedIn Job Post
+              </h2>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-500">
+              Paste raw content below to auto-populate all CA fields
+            </span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                Full LinkedIn Post Content *
+              </label>
+              <textarea
+                rows={4}
+                value={linkedInText}
+                onChange={(e) => setLinkedInText(e.target.value)}
+                placeholder="Paste the full text of the LinkedIn job post here (e.g. 'Deloitte is hiring CA Article Assistants in Statutory Audit...')..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs text-[#152B45] bg-white focus:border-[#176FA8] focus:outline-hidden"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                LinkedIn Post URL (Optional)
+              </label>
+              <div className="relative">
+                <LinkIcon className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="url"
+                  value={linkedInUrl}
+                  onChange={(e) => setLinkedInUrl(e.target.value)}
+                  placeholder="https://www.linkedin.com/posts/..."
+                  className="w-full pl-10 pr-3 py-2 text-xs text-[#152B45] bg-white rounded-xl border border-slate-300 focus:border-[#176FA8] focus:outline-hidden"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={handleLinkedInAutoFill}
+                disabled={!linkedInText.trim()}
+                className="px-4 py-2 bg-[#0077B5] hover:bg-[#005f93] text-white text-xs font-bold rounded-xl shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Auto-Fill Job Details</span>
+              </button>
+
+              {linkedInText && (
+                <button
+                  type="button"
+                  onClick={handleClearImport}
+                  className="px-3 py-2 border border-slate-300 hover:bg-slate-100 text-slate-600 text-xs font-semibold rounded-xl flex items-center gap-1"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Clear</span>
+                </button>
+              )}
+            </div>
+
+            {linkedInNotice && (
+              <div
+                className={`p-3 rounded-xl text-xs flex items-center gap-2 border ${
+                  linkedInNotice.type === 'warning'
+                    ? 'bg-amber-50 border-amber-200 text-amber-800'
+                    : 'bg-emerald-50 border-emerald-200 text-emerald-800 font-medium'
+                }`}
+              >
+                {linkedInNotice.type === 'warning' ? (
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                ) : (
+                  <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-600" />
+                )}
+                <span>{linkedInNotice.message}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Main Job Form */}
       <form onSubmit={(e) => handleSubmit(e, false)} className="space-y-6">
-        {/* Basic Classification */}
+        {/* Section 1: Company & Classification */}
         <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-[#173B63]">
-            1. Role Title & Core Category
+            1. Firm Name & Opportunity Classification
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            {/* Mandatory Company / Firm Name */}
+            <div className="sm:col-span-2">
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Company / Firm Name *
+              </label>
+              <input
+                type="text"
+                name="companyName"
+                required
+                value={formData.companyName}
+                onChange={handleChange}
+                placeholder="e.g. BDO India LLP / Deloitte / Singhal & Associates CA"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden font-semibold text-[#173B63]"
+              />
+            </div>
+
+            {/* Opportunity Title */}
             <div className="sm:col-span-2">
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Opportunity Title *
@@ -172,6 +417,7 @@ export default function EmployerPostJob() {
               />
             </div>
 
+            {/* Strictly 3 Categories */}
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Target Category *
@@ -182,9 +428,9 @@ export default function EmployerPostJob() {
                 onChange={handleCategoryChange}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden font-semibold text-[#173B63]"
               >
-                <option value="articleship">CA Articleship (Intermediate)</option>
-                <option value="industrial-training">CA Industrial Training (Final)</option>
-                <option value="ca-jobs">CA Qualified Jobs (Full-Time)</option>
+                <option value="articleship">CA Articleship</option>
+                <option value="industrial-training">CA Industrial Training</option>
+                <option value="ca-jobs">CA Jobs</option>
               </select>
             </div>
 
@@ -199,17 +445,19 @@ export default function EmployerPostJob() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               >
                 {domainsList.map((d) => (
-                  <option key={d} value={d}>{d}</option>
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
                 ))}
               </select>
             </div>
           </div>
         </div>
 
-        {/* Location & Eligibility */}
+        {/* Section 2: Location, Mode & Vacancies */}
         <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-[#173B63]">
-            2. Location, Work Mode & Candidate Eligibility
+            2. Location, Work Mode & Vacancies
           </h2>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
@@ -224,7 +472,9 @@ export default function EmployerPostJob() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               >
                 {initialCities.map((c) => (
-                  <option key={c} value={c}>{c}</option>
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
                 ))}
               </select>
             </div>
@@ -251,17 +501,26 @@ export default function EmployerPostJob() {
               </label>
               <input
                 type="number"
+                min={1}
                 name="openVacancies"
-                min="1"
                 value={formData.openVacancies}
                 onChange={handleChange}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
             </div>
+          </div>
+        </div>
 
+        {/* Section 3: Eligibility & Compensation */}
+        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
+          <h2 className="text-base font-bold text-[#173B63]">
+            3. Candidate Eligibility & Compensation
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Groups Cleared Prerequisite
+                Groups Required
               </label>
               <select
                 name="requiredGroups"
@@ -272,24 +531,22 @@ export default function EmployerPostJob() {
                 <option value="Both Groups">Both Groups Cleared</option>
                 <option value="Group 1">Group 1 Cleared</option>
                 <option value="Group 2">Group 2 Cleared</option>
-                <option value="Either Group">Either Group Cleared</option>
+                <option value="Either Group">Either Group</option>
               </select>
             </div>
 
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Attempts Filter
+                Attempt Criteria
               </label>
-              <select
+              <input
+                type="text"
                 name="attempts"
                 value={formData.attempts}
                 onChange={handleChange}
+                placeholder="e.g. First Attempt Preferred / Max 2 Attempts"
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
-              >
-                <option value="First Attempt Preferred">First Attempt Preferred</option>
-                <option value="Max 2 Attempts">Max 2 Attempts</option>
-                <option value="Any">Any Number of Attempts</option>
-              </select>
+              />
             </div>
 
             <div>
@@ -319,16 +576,7 @@ export default function EmployerPostJob() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
             </div>
-          </div>
-        </div>
 
-        {/* Compensation (Stipend / CTC) */}
-        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
-          <h2 className="text-base font-bold text-[#173B63]">
-            3. Compensation (Monthly Stipend or Annual CTC)
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                 Minimum Amount (INR)
@@ -372,7 +620,7 @@ export default function EmployerPostJob() {
           </div>
         </div>
 
-        {/* Detailed Description & Responsibilities */}
+        {/* Section 4: Description, Responsibilities & Skills */}
         <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
           <h2 className="text-base font-bold text-[#173B63]">
             4. Role Overview, Responsibilities & Skills
@@ -421,8 +669,51 @@ export default function EmployerPostJob() {
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
             </div>
+          </div>
+        </div>
 
-            <div className="pt-2 flex items-center gap-2">
+        {/* Section 5: Application Channels & Spotlights */}
+        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
+          <h2 className="text-base font-bold text-[#173B63]">
+            5. Application Channels & Featured Placement
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Official Application Portal / Link (Optional)
+              </label>
+              <input
+                type="url"
+                name="applicationLink"
+                value={formData.applicationLink}
+                onChange={handleChange}
+                placeholder="https://company.com/careers/apply/..."
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Candidates can click to apply on external portal in addition to 1-click CV apply.
+              </p>
+            </div>
+
+            <div>
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                Recruiter / HR Email (Optional)
+              </label>
+              <input
+                type="email"
+                name="recruiterEmail"
+                value={formData.recruiterEmail}
+                onChange={handleChange}
+                placeholder="careers@firm.com"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
+              />
+              <p className="text-[11px] text-slate-400 mt-1">
+                Display direct email for candidates to send resumes directly.
+              </p>
+            </div>
+
+            <div className="sm:col-span-2 pt-2 flex items-center gap-2">
               <input
                 type="checkbox"
                 id="isFeatured"
@@ -432,7 +723,7 @@ export default function EmployerPostJob() {
                 className="rounded border-slate-300 text-[#176FA8] focus:ring-[#176FA8]"
               />
               <label htmlFor="isFeatured" className="text-xs text-slate-700 font-medium">
-                Request <strong>Featured Spotlight</strong> placement on homepage & top of search feeds
+                Mark as <strong>Featured Spotlight</strong> (highlighted with gold badge on homepage & categories)
               </label>
             </div>
           </div>
@@ -440,20 +731,23 @@ export default function EmployerPostJob() {
 
         {/* Action Buttons */}
         <div className="flex items-center justify-end gap-3 pt-2">
-          <button
-            type="button"
-            onClick={(e) => handleSubmit(e, true)}
-            className="px-5 py-2.5 border border-[#DCE5ED] text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save as Draft</span>
-          </button>
+          {!isEditing && (
+            <button
+              type="button"
+              onClick={(e) => handleSubmit(e, true)}
+              className="px-5 py-2.5 border border-[#DCE5ED] text-slate-700 font-semibold text-xs rounded-xl hover:bg-slate-50 transition-colors flex items-center gap-1.5"
+            >
+              <Save className="w-4 h-4" />
+              <span>Save as Draft</span>
+            </button>
+          )}
+
           <button
             type="submit"
             className="px-6 py-2.5 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-1.5"
           >
             <Send className="w-4 h-4" />
-            <span>Publish Vacancy</span>
+            <span>{isEditing ? 'Save & Update Opportunity' : 'Publish Opportunity Live'}</span>
           </button>
         </div>
       </form>

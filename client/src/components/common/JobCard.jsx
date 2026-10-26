@@ -87,8 +87,8 @@ export default function JobCard({ job, onApplyClick }) {
                 }}
               />
             ) : null}
-            <span className={company.logo ? 'hidden' : 'block'}>
-              {company.initials || company.name?.substring(0, 2).toUpperCase() || 'CA'}
+            <span className={company.logo && !job.companyName ? 'hidden' : 'block'}>
+              {job.companyName ? job.companyName.substring(0, 2).toUpperCase() : (company.initials || company.name?.substring(0, 2).toUpperCase() || 'CA')}
             </span>
           </div>
 
@@ -97,8 +97,8 @@ export default function JobCard({ job, onApplyClick }) {
               {job.title}
             </h3>
             <div className="flex items-center flex-wrap gap-1.5 mt-1">
-              <span className="text-sm font-medium text-slate-700 truncate">
-                {company.name}
+              <span className="text-sm font-semibold text-slate-800 truncate">
+                {job.companyName || company.name}
               </span>
               {company.isVerified && <VerifiedBadge size="sm" showText={false} />}
             </div>
