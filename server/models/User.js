@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    recoveryUsedToken: {
+      type: String,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -17,6 +17,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import FounderSetup from './pages/FounderSetup';
 
 // Student Pages
 import StudentDashboard from './pages/StudentDashboard';
@@ -79,6 +80,7 @@ export default function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/founder-setup" element={<FounderSetup />} />
 
                 {/* 2. Student Portal Routes */}
                 <Route
