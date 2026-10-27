@@ -35,10 +35,26 @@ export async function getJobs(req, res, next) {
 
     const jobs = await Job.find(query).populate('companyId').sort(sortOption);
 
+    const normalizedJobs = jobs.map((job) => {
+      const j = job.toObject ? job.toObject() : { ...job };
+      if (j.category === 'industrial-training') {
+        if (
+          !j.eligibility ||
+          j.eligibility.includes('18 months') ||
+          j.eligibility.includes('9-12 months') ||
+          j.eligibility === 'CA Final student with 12 months minimum training completed' ||
+          j.eligibility === 'CA Finalist with deep interest in public stock markets'
+        ) {
+          j.eligibility = 'CA Finalist with min 12 months of completed articleship';
+        }
+      }
+      return j;
+    });
+
     res.json({
       success: true,
-      count: jobs.length,
-      jobs,
+      count: normalizedJobs.length,
+      jobs: normalizedJobs,
     });
   } catch (error) {
     next(error);
@@ -54,7 +70,19 @@ export async function getJobById(req, res, next) {
     if (!job) {
       return res.status(404).json({ success: false, message: 'Job vacancy not found' });
     }
-    res.json({ success: true, job });
+    const jobObj = job.toObject ? job.toObject() : { ...job };
+    if (jobObj.category === 'industrial-training') {
+      if (
+        !jobObj.eligibility ||
+        jobObj.eligibility.includes('18 months') ||
+        jobObj.eligibility.includes('9-12 months') ||
+        jobObj.eligibility === 'CA Final student with 12 months minimum training completed' ||
+        jobObj.eligibility === 'CA Finalist with deep interest in public stock markets'
+      ) {
+        jobObj.eligibility = 'CA Finalist with min 12 months of completed articleship';
+      }
+    }
+    res.json({ success: true, job: jobObj });
   } catch (error) {
     next(error);
   }
@@ -100,8 +128,16 @@ export async function createJob(req, res, next) {
       }
     }
 
+    let eligibility = req.body.eligibility;
+    if (req.body.category === 'industrial-training') {
+      if (!eligibility || !eligibility.trim()) {
+        eligibility = 'CA Finalist with min 12 months of completed articleship';
+      }
+    }
+
     const jobData = {
       ...req.body,
+      eligibility: eligibility || req.body.eligibility,
       companyId: company._id,
       companyName: isAdmin ? rawCompanyName : company.name,
       status: isAdmin ? (req.body.status || 'Published') : (company.isVerified ? 'Published' : 'Pending Review'),
@@ -149,6 +185,14 @@ export async function updateJob(req, res, next) {
         });
       }
       req.body.companyId = company._id;
+    }
+
+    if (
+      (req.body.category === 'industrial-training' || (!req.body.category && job.category === 'industrial-training')) &&
+      req.body.eligibility !== undefined &&
+      !req.body.eligibility.trim()
+    ) {
+      req.body.eligibility = 'CA Finalist with min 12 months of completed articleship';
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {

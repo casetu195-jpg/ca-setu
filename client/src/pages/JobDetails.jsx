@@ -258,7 +258,11 @@ export default function JobDetails() {
           </div>
           <div>
             <span className="text-slate-400 block font-medium">Eligibility</span>
-            <span className="font-bold text-[#152B45] text-sm mt-0.5 block">{job.requiredGroups} Cleared</span>
+            <span className="font-bold text-[#152B45] text-xs sm:text-sm mt-0.5 block leading-snug">
+              {job.category === 'industrial-training'
+                ? 'CA Finalist with min 12 months of completed articleship'
+                : (job.eligibility || `${job.requiredGroups} Cleared`)}
+            </span>
           </div>
           <div>
             <span className="text-slate-400 block font-medium">Vacancies</span>
@@ -359,6 +363,60 @@ export default function JobDetails() {
                 </div>
               </div>
             )}
+          </div>
+
+          {/* Section: Candidate Eligibility Criteria */}
+          <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
+            <h2 className="text-lg font-bold text-[#173B63] flex items-center gap-2">
+              <GraduationCap className="w-5 h-5 text-[#176FA8]" />
+              Candidate Eligibility Criteria
+            </h2>
+
+            <div className="space-y-3">
+              {job.category === 'industrial-training' ? (
+                <div className="p-4 bg-[#EEF6FC]/60 border border-[#176FA8]/20 rounded-xl space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#176FA8]">
+                    <span>CA Dwar Platform Requirement</span>
+                  </div>
+                  <p className="text-sm font-semibold text-[#173B63]">
+                    CA Finalist with min 12 months of completed articleship
+                  </p>
+                  <p className="text-xs text-slate-500">
+                    Mandatory standard eligibility guideline as per ICAI practical training regulations.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600">
+                    <span>Standard Eligibility</span>
+                  </div>
+                  <p className="text-sm font-semibold text-[#173B63]">
+                    {job.eligibility || (job.category === 'ca-jobs' ? 'Qualified Chartered Accountant (ICAI Member)' : 'CA Intermediate cleared (Both Groups preferred)')}
+                  </p>
+                </div>
+              )}
+
+              {(job.requiredGroups || (job.attempts && job.attempts !== 'Any')) && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {job.requiredGroups && (
+                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                        Required Groups
+                      </span>
+                      <span className="text-sm font-bold text-[#152B45]">{job.requiredGroups}</span>
+                    </div>
+                  )}
+                  {job.attempts && job.attempts !== 'Any' && (
+                    <div className="p-3 bg-white border border-slate-200 rounded-xl">
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
+                        Employer Specific Criteria
+                      </span>
+                      <span className="text-sm font-bold text-[#152B45]">{job.attempts}</span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Section: About the Company */}

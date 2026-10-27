@@ -143,6 +143,12 @@ export default function EmployerPostJob() {
       stipendPeriod: newCat === 'ca-jobs' ? 'Per Annum' : 'Monthly',
       stipendMin: newCat === 'ca-jobs' ? 900000 : 15000,
       stipendMax: newCat === 'ca-jobs' ? 1200000 : 25000,
+      eligibility:
+        newCat === 'industrial-training'
+          ? 'CA Finalist with min 12 months of completed articleship'
+          : newCat === 'ca-jobs'
+          ? 'Qualified Chartered Accountant (ICAI Member)'
+          : 'CA Intermediate cleared (Both Groups preferred)',
     }));
   };
 
@@ -245,8 +251,17 @@ export default function EmployerPostJob() {
     const finalDomain =
       formData.domain === 'Other' ? customDomain.trim() : formData.domain;
 
+    const finalEligibility =
+      formData.eligibility?.trim() ||
+      (formData.category === 'industrial-training'
+        ? 'CA Finalist with min 12 months of completed articleship'
+        : formData.category === 'ca-jobs'
+        ? 'Qualified Chartered Accountant (ICAI Member)'
+        : 'CA Intermediate cleared (Both Groups preferred)');
+
     const payload = {
       ...formData,
+      eligibility: finalEligibility,
       domain: finalDomain,
       companyName: formData.companyName.trim(),
       categoryName,
@@ -643,9 +658,20 @@ export default function EmployerPostJob() {
                 name="eligibility"
                 value={formData.eligibility}
                 onChange={handleChange}
-                placeholder="e.g. CA Final student eligible for min 12 months of Industrial Training"
+                placeholder={
+                  formData.category === 'industrial-training'
+                    ? 'CA Finalist with min 12 months of completed articleship'
+                    : formData.category === 'ca-jobs'
+                    ? 'e.g. Qualified Chartered Accountant (ICAI Member)'
+                    : 'e.g. CA Intermediate cleared (Both Groups preferred)'
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
+              {formData.category === 'industrial-training' && (
+                <p className="text-[11px] text-slate-500 mt-1">
+                  CA Dwar Platform Criterion: CA Finalist with min 12 months of completed articleship.
+                </p>
+              )}
             </div>
 
             <div>

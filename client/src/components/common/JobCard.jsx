@@ -119,7 +119,10 @@ export default function JobCard({ job, onApplyClick }) {
 
         {/* Eligibility line */}
         <p className="text-xs text-slate-500 line-clamp-1 mb-3">
-          <strong className="text-slate-700 font-medium">Eligibility:</strong> {job.eligibility}
+          <strong className="text-slate-700 font-medium">Eligibility:</strong>{' '}
+          {job.category === 'industrial-training'
+            ? 'CA Finalist with min 12 months of completed articleship'
+            : (job.eligibility || 'Eligible CA Candidate')}
         </p>
       </div>
 

@@ -147,7 +147,10 @@ export default function AdminJobs() {
                       {j.companyName || (companies.find((c) => c.id === j.companyId)?.name) || 'CA Firm'}
                     </span>
                     <span className="text-[11px] text-slate-400">
-                      Eligibility: {j.eligibility}
+                      Eligibility:{' '}
+                      {j.category === 'industrial-training'
+                        ? 'CA Finalist with min 12 months of completed articleship'
+                        : (j.eligibility || 'Standard Criteria')}
                     </span>
                   </td>
 

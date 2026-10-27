@@ -235,7 +235,7 @@ export function parseLinkedInPost(rawText, sourceUrl = '') {
   if (category === 'articleship') {
     eligibility = 'CA Intermediate cleared (Both Groups preferred) as per ICAI norms';
   } else if (category === 'industrial-training') {
-    eligibility = 'CA Finalist with min 18 months of completed articleship';
+    eligibility = 'CA Finalist with min 12 months of completed articleship';
   } else {
     eligibility = 'Qualified Chartered Accountant (ICAI Member)';
   }
