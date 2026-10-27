@@ -25,10 +25,12 @@ export default function EmployerPostJob() {
 
   const isAdmin = user?.role === 'admin';
   const defaultCompany =
-    companies.find((c) => c.id === user?.companyId) || companies[0];
+    companies.find((c) => c.id === user?.companyId) || (!isAdmin ? companies[0] : null);
+
+  const [customDomain, setCustomDomain] = useState('');
 
   const [formData, setFormData] = useState({
-    companyName: defaultCompany?.name || '',
+    companyName: isAdmin ? '' : (defaultCompany?.name || ''),
     title: '',
     category: 'articleship',
     domain: 'Statutory Audit & Assurance',
@@ -66,11 +68,20 @@ export default function EmployerPostJob() {
       if (existing) {
         setIsEditing(true);
         const comp = companies.find((c) => c.id === existing.companyId);
+        const cat = existing.category || 'articleship';
+        const targetDomains =
+          cat === 'articleship'
+            ? initialDomains.articleship
+            : cat === 'industrial-training'
+            ? initialDomains.industrial
+            : initialDomains.jobs;
+        const isCustom = existing.domain && !targetDomains.includes(existing.domain);
+
         setFormData({
           companyName: existing.companyName || comp?.name || '',
           title: existing.title || '',
-          category: existing.category || 'articleship',
-          domain: existing.domain || 'Statutory Audit & Assurance',
+          category: cat,
+          domain: isCustom ? 'Other' : existing.domain || targetDomains[0],
           city: existing.city || 'Mumbai',
           workMode: existing.workMode || 'On-site',
           stipendMin: existing.stipendMin || 15000,
@@ -92,6 +103,10 @@ export default function EmployerPostJob() {
           recruiterEmail: existing.recruiterEmail || '',
           isFeatured: existing.isFeatured || false,
         });
+
+        if (isCustom) {
+          setCustomDomain(existing.domain);
+        }
       }
     }
   }, [editId, jobs, companies]);
@@ -120,6 +135,7 @@ export default function EmployerPostJob() {
         ? initialDomains.industrial
         : initialDomains.jobs;
 
+    setCustomDomain('');
     setFormData((prev) => ({
       ...prev,
       category: newCat,
@@ -143,11 +159,27 @@ export default function EmployerPostJob() {
 
     const { extracted, isCaRelated } = result;
 
+    const targetDomains =
+      extracted.category === 'articleship'
+        ? initialDomains.articleship
+        : extracted.category === 'industrial-training'
+        ? initialDomains.industrial
+        : initialDomains.jobs;
+
+    const isDomainKnown = targetDomains.includes(extracted.domain);
+
     setFormData((prev) => ({
       ...prev,
       ...extracted,
+      domain: isDomainKnown ? extracted.domain : (extracted.domain ? 'Other' : targetDomains[0]),
       companyName: extracted.companyName || prev.companyName,
     }));
+
+    if (!isDomainKnown && extracted.domain) {
+      setCustomDomain(extracted.domain);
+    } else {
+      setCustomDomain('');
+    }
 
     if (!isCaRelated) {
       setLinkedInNotice({
@@ -205,8 +237,17 @@ export default function EmployerPostJob() {
         ? 'Industrial Training'
         : 'CA Jobs';
 
+    if (formData.domain === 'Other' && !customDomain.trim()) {
+      setError('Please specify the custom domain name.');
+      return;
+    }
+
+    const finalDomain =
+      formData.domain === 'Other' ? customDomain.trim() : formData.domain;
+
     const payload = {
       ...formData,
+      domain: finalDomain,
       companyName: formData.companyName.trim(),
       categoryName,
       responsibilities,
@@ -220,30 +261,34 @@ export default function EmployerPostJob() {
         : 'Pending Review',
     };
 
-    if (isEditing && editId) {
-      await editJob(editId, payload);
-      setSuccessMsg('Opportunity updated successfully!');
+    try {
+      if (isEditing && editId) {
+        await editJob(editId, payload);
+        setSuccessMsg('Opportunity updated successfully in database!');
+        setTimeout(() => {
+          navigate(isAdmin ? '/admin/jobs' : '/employer/jobs');
+        }, 1000);
+        return;
+      }
+
+      await postNewJob(payload);
+
+      setSuccessMsg(
+        asDraft
+          ? 'Job saved as draft successfully!'
+          : isAdmin
+          ? 'Opportunity published live on CA Dwar!'
+          : defaultCompany?.isVerified
+          ? 'Opportunity published live on CA Dwar!'
+          : 'Job submitted for Admin review!'
+      );
+
       setTimeout(() => {
         navigate(isAdmin ? '/admin/jobs' : '/employer/jobs');
-      }, 1000);
-      return;
+      }, 1200);
+    } catch (err) {
+      setError(err.message || 'Failed to save opportunity to database. Please check all fields.');
     }
-
-    await postNewJob(payload, defaultCompany?.id);
-
-    setSuccessMsg(
-      asDraft
-        ? 'Job saved as draft successfully!'
-        : isAdmin
-        ? 'Opportunity published live on CA Dwar!'
-        : defaultCompany?.isVerified
-        ? 'Opportunity published live on CA Dwar!'
-        : 'Job submitted for Admin review!'
-    );
-
-    setTimeout(() => {
-      navigate(isAdmin ? '/admin/jobs' : '/employer/jobs');
-    }, 1200);
   };
 
   return (
@@ -396,7 +441,11 @@ export default function EmployerPostJob() {
                 required
                 value={formData.companyName}
                 onChange={handleChange}
-                placeholder="e.g. BDO India LLP / Deloitte / Singhal & Associates CA"
+                placeholder={
+                  isAdmin
+                    ? "e.g. Tata 1mg / Hetero / Deloitte / Singhal & Associates CA"
+                    : "e.g. BDO India LLP / Deloitte / Singhal & Associates CA"
+                }
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden font-semibold text-[#173B63]"
               />
             </div>
@@ -441,7 +490,10 @@ export default function EmployerPostJob() {
               <select
                 name="domain"
                 value={formData.domain}
-                onChange={handleChange}
+                onChange={(e) => {
+                  handleChange(e);
+                  if (e.target.value !== 'Other') setCustomDomain('');
+                }}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               >
                 {domainsList.map((d) => (
@@ -449,8 +501,27 @@ export default function EmployerPostJob() {
                     {d}
                   </option>
                 ))}
+                <option value="Other">Other</option>
               </select>
             </div>
+
+            {/* Specify Domain when 'Other' is selected */}
+            {formData.domain === 'Other' && (
+              <div className="sm:col-span-2">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Specify Domain *
+                </label>
+                <input
+                  type="text"
+                  name="customDomain"
+                  required
+                  value={customDomain}
+                  onChange={(e) => setCustomDomain(e.target.value)}
+                  placeholder="Enter custom domain (e.g. ESG Advisory, Forensic Audit, Crypto Taxation...)"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden font-medium text-[#173B63]"
+                />
+              </div>
+            )}
           </div>
         </div>
 

@@ -6,9 +6,14 @@ import { Company } from '../models/Company.js';
 // @access  Public
 export async function getJobs(req, res, next) {
   try {
-    const { category, city, domain, workMode, groups, q, sort } = req.query;
+    const { category, city, domain, workMode, groups, q, sort, status } = req.query;
 
-    const query = { status: 'Published' };
+    const query = {};
+    if (status && status !== 'all') {
+      query.status = status;
+    } else if (!status) {
+      query.status = 'Published';
+    }
 
     if (category) query.category = category;
     if (city) query.city = new RegExp(city, 'i');
@@ -61,25 +66,36 @@ export async function getJobById(req, res, next) {
 export async function createJob(req, res, next) {
   try {
     const isAdmin = req.user.role === 'admin';
-    let company = await Company.findOne({ userId: req.user._id });
+    const rawCompanyName = (req.body.companyName || '').trim();
 
-    const rawCompanyName = (req.body.companyName || company?.name || '').trim();
-    if (!rawCompanyName) {
+    if (!rawCompanyName && isAdmin) {
       return res.status(400).json({ success: false, message: 'Company / Firm Name is required.' });
     }
 
-    // If company not found for user (e.g. Admin posting on behalf of a firm), find or create company record
-    if (!company || (isAdmin && req.body.companyName && req.body.companyName !== company.name)) {
-      company = await Company.findOne({ name: new RegExp(`^${rawCompanyName}$`, 'i') });
+    let company = null;
+
+    if (isAdmin) {
+      // Admin posting on behalf of any specified hiring company
+      const escapedName = rawCompanyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      company = await Company.findOne({ name: new RegExp(`^${escapedName}$`, 'i') });
       if (!company) {
         company = await Company.create({
           userId: req.user._id,
           name: rawCompanyName,
-          firmType: 'CA Firm / Corporate',
+          firmType: 'Corporate / MNC',
           registrationNumber: 'VERIFIED-PARTNER',
           city: req.body.city || 'Mumbai',
           address: 'India',
           isVerified: true,
+        });
+      }
+    } else {
+      // Regular employer posting for their own registered company
+      company = await Company.findOne({ userId: req.user._id });
+      if (!company) {
+        return res.status(400).json({
+          success: false,
+          message: 'Employer profile not found. Please complete company registration first.',
         });
       }
     }
@@ -87,7 +103,7 @@ export async function createJob(req, res, next) {
     const jobData = {
       ...req.body,
       companyId: company._id,
-      companyName: rawCompanyName,
+      companyName: isAdmin ? rawCompanyName : company.name,
       status: isAdmin ? (req.body.status || 'Published') : (company.isVerified ? 'Published' : 'Pending Review'),
     };
 
@@ -114,6 +130,25 @@ export async function updateJob(req, res, next) {
       if (!company || String(job.companyId) !== String(company._id)) {
         return res.status(403).json({ success: false, message: 'Not authorized to update this job' });
       }
+    }
+
+    // If companyName is modified by admin, locate or create matching company record
+    if (req.user.role === 'admin' && req.body.companyName && req.body.companyName.trim() !== job.companyName) {
+      const rawCompanyName = req.body.companyName.trim();
+      const escapedName = rawCompanyName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      let company = await Company.findOne({ name: new RegExp(`^${escapedName}$`, 'i') });
+      if (!company) {
+        company = await Company.create({
+          userId: req.user._id,
+          name: rawCompanyName,
+          firmType: 'Corporate / MNC',
+          registrationNumber: 'VERIFIED-PARTNER',
+          city: req.body.city || job.city || 'Mumbai',
+          address: 'India',
+          isVerified: true,
+        });
+      }
+      req.body.companyId = company._id;
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {

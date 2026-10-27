@@ -87,7 +87,7 @@ export default function JobCard({ job, onApplyClick }) {
                 }}
               />
             ) : null}
-            <span className={company.logo && !job.companyName ? 'hidden' : 'block'}>
+            <span className={company.logo ? 'hidden' : 'block'}>
               {job.companyName ? job.companyName.substring(0, 2).toUpperCase() : (company.initials || company.name?.substring(0, 2).toUpperCase() || 'CA')}
             </span>
           </div>

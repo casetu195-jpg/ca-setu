@@ -184,58 +184,52 @@ export function JobProvider({ children }) {
   };
 
   // Employer Job Posting
-  const postNewJob = async (jobData, companyId) => {
-    const company = companies.find((c) => c.id === companyId) || companies[0];
-
+  const postNewJob = async (jobData) => {
     try {
       const res = await jobsAPI.createJob(jobData);
       if (res.data?.success && res.data.job) {
         const liveJob = {
           ...res.data.job,
           id: res.data.job._id || res.data.job.id,
-          companyId: company.id,
+          companyId: res.data.job.companyId?._id || res.data.job.companyId || res.data.job.companyId?.id,
         };
         setJobs((prev) => [liveJob, ...prev]);
         return liveJob;
       }
-    } catch {
-      // Fallback local save
+      throw new Error(res.data?.message || 'Database rejected vacancy save.');
+    } catch (apiErr) {
+      const msg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Failed to save vacancy to database. Please check all fields.';
+      throw new Error(msg);
     }
-
-    const newJob = {
-      ...jobData,
-      id: 'job-' + Date.now(),
-      companyId: company.id,
-      status: company.isVerified ? 'Published' : 'Pending Review',
-      isFeatured: jobData.isFeatured || false,
-      applicantCount: 0,
-      postedTime: 'Just now',
-      createdAt: new Date().toISOString(),
-    };
-
-    setJobs((prev) => [newJob, ...prev]);
-    return newJob;
   };
 
   // Update Job Status
   const updateJobStatus = async (jobId, newStatus) => {
     try {
       await jobsAPI.updateJob(jobId, { status: newStatus });
-    } catch {
-      // Fallback
+      setJobs((prev) =>
+        prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, status: newStatus } : j))
+      );
+    } catch (err) {
+      console.error('Failed to update job status in database:', err);
     }
-
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, status: newStatus } : j))
-    );
   };
 
   // Delete Job
   const deleteJob = async (jobId) => {
     try {
       await jobsAPI.deleteJob(jobId);
-    } catch {}
-    setJobs((prev) => prev.filter((j) => j.id !== jobId && j._id !== jobId));
+      setJobs((prev) => prev.filter((j) => j.id !== jobId && j._id !== jobId));
+    } catch (apiErr) {
+      const msg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Failed to delete vacancy from database.';
+      throw new Error(msg);
+    }
   };
 
   // Edit Job Details
@@ -243,14 +237,22 @@ export function JobProvider({ children }) {
     try {
       const res = await jobsAPI.updateJob(jobId, updatedData);
       if (res.data?.success && res.data.job) {
-        const updated = { ...res.data.job, id: res.data.job._id || res.data.job.id };
+        const updated = {
+          ...res.data.job,
+          id: res.data.job._id || res.data.job.id,
+          companyId: res.data.job.companyId?._id || res.data.job.companyId || res.data.job.companyId?.id,
+        };
         setJobs((prev) => prev.map((j) => (j.id === jobId || j._id === jobId ? updated : j)));
         return updated;
       }
-    } catch {}
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, ...updatedData } : j))
-    );
+      throw new Error(res.data?.message || 'Failed to update vacancy in database.');
+    } catch (apiErr) {
+      const msg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Failed to update vacancy in database.';
+      throw new Error(msg);
+    }
   };
 
   // Admin Job Operations

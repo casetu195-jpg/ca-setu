@@ -71,7 +71,7 @@ export default function Header() {
           <div className="hidden md:flex items-center gap-3">
             {/* Post Job CTA button */}
             <Link
-              to={isEmployer ? '/employer/post-job' : '/employer/dashboard'}
+              to={isAdmin || isEmployer ? '/employer/post-job' : '/login'}
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-medium rounded-lg text-[#176FA8] border border-[#176FA8]/30 hover:bg-[#EEF6FC] transition-colors"
             >
               <PlusCircle className="w-4 h-4 text-[#176FA8]" />
@@ -200,7 +200,7 @@ export default function Header() {
 
           <div className="pt-3 border-t border-[#DCE5ED] flex flex-col gap-2">
             <Link
-              to={isEmployer ? '/employer/post-job' : '/employer/dashboard'}
+              to={isAdmin || isEmployer ? '/employer/post-job' : '/login'}
               onClick={() => setMobileMenuOpen(false)}
               className="w-full flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-[#176FA8] bg-[#EEF6FC] rounded-lg"
             >

@@ -262,6 +262,7 @@ export default function JobListings() {
           onResetFilters={handleResetFilters}
           isOpenMobile={mobileFilterOpen}
           onCloseMobile={() => setMobileFilterOpen(false)}
+          customDomains={jobs.map((j) => j.domain).filter(Boolean)}
         />
 
         {/* Job Results Grid */}

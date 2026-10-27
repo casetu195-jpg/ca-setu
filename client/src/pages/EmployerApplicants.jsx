@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useSearchParams, Link } from 'react-router-dom';
+import { useSearchParams, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import { getStatusBadgeClass, formatDate } from '../utils/helpers';
@@ -22,8 +22,12 @@ export default function EmployerApplicants() {
   const { user } = useAuth();
   const { applications, jobs, companies, updateApplicationStatus, getJobById } = useJobs();
 
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   const company =
-    companies.find((c) => c.id === user?.companyId) || companies[0];
+    companies.find((c) => c.id === user?.companyId) || (companies.length > 0 ? companies[0] : { id: '', name: user?.companyName || 'Employer' });
 
   const employerJobs = jobs.filter((j) => j.companyId === company.id);
   const employerJobIds = employerJobs.map((j) => j.id);

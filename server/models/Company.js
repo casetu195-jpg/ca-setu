@@ -21,6 +21,7 @@ const companySchema = new mongoose.Schema(
         'Sole Proprietorship',
         'Corporate / MNC',
         'Boutique Advisory',
+        'CA Firm / Corporate',
       ],
       default: 'Partnership / LLP',
       required: true,

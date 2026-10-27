@@ -9,13 +9,18 @@ export default function FilterSidebar({
   onResetFilters,
   isOpenMobile = false,
   onCloseMobile,
+  customDomains = [],
 }) {
-  const domainsList =
+  const baseDomains =
     category === 'articleship'
       ? initialDomains.articleship
       : category === 'industrial-training'
       ? initialDomains.industrial
       : initialDomains.jobs;
+
+  const domainsList = Array.from(
+    new Set([...baseDomains, ...customDomains.filter(Boolean)])
+  );
 
   const workModes = ['On-site', 'Hybrid', 'Remote'];
   const groupsList = ['Both Groups', 'Group 1', 'Group 2', 'Either Group'];

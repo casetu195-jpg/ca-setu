@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import { formatStipend, getStatusBadgeClass } from '../utils/helpers';
@@ -19,8 +19,12 @@ export default function EmployerJobs() {
   const { user } = useAuth();
   const { jobs, companies, updateJobStatus, deleteJob } = useJobs();
 
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/jobs" replace />;
+  }
+
   const company =
-    companies.find((c) => c.id === user?.companyId) || companies[0];
+    companies.find((c) => c.id === user?.companyId) || (companies.length > 0 ? companies[0] : { id: '', name: user?.companyName || 'Employer' });
 
   const employerJobs = jobs.filter((j) => j.companyId === company.id);
 

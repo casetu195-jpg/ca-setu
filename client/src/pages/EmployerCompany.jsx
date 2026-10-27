@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
@@ -9,17 +10,22 @@ export default function EmployerCompany() {
   const { user } = useAuth();
   const { companies } = useJobs();
 
+  // If Admin accesses, redirect to dedicated Admin Dashboard
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   const company =
-    companies.find((c) => c.id === user?.companyId) || companies[0];
+    companies.find((c) => c.id === user?.companyId) || null;
 
   const [formData, setFormData] = useState({
-    name: company?.name || 'Motilal Oswal Alternates',
-    firmType: company?.firmType || 'Corporate / MNC',
-    registrationNumber: company?.registrationNumber || 'U67190MH2006PTC160583',
+    name: company?.name || user?.companyName || '',
+    firmType: company?.firmType || 'Partnership / LLP',
+    registrationNumber: company?.registrationNumber || '',
     city: company?.city || 'Mumbai',
-    address: company?.address || 'Motilal Oswal Tower, Gokhale Road, Prabhadevi, Mumbai 400025',
-    website: company?.website || 'https://www.motilaloswalalternates.com',
-    description: company?.description || 'Alternative asset management arm of Motilal Oswal Financial Services, managing over $2 Billion across Private Equity and Real Estate funds.',
+    address: company?.address || '',
+    website: company?.website || '',
+    description: company?.description || '',
   });
 
   const [docUploaded, setDocUploaded] = useState(true);

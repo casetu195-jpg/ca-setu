@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useJobs } from '../context/JobContext';
 import VerifiedBadge from '../components/common/VerifiedBadge';
@@ -21,9 +21,19 @@ export default function EmployerDashboard() {
   const { user } = useAuth();
   const { jobs, companies, applications, getCompanyById } = useJobs();
 
-  // Find employer's company (defaults to Motilal Oswal or BDO in demo mode)
+  // If Admin accesses, redirect to dedicated Admin Dashboard
+  if (user?.role === 'admin') {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
+  // Find employer's company (matches registered company or user company name)
   const company =
-    companies.find((c) => c.id === user?.companyId) || companies[0];
+    companies.find((c) => c.id === user?.companyId) || {
+      name: user?.companyName || 'Registered CA Employer',
+      firmType: 'Partnership / LLP',
+      isVerified: false,
+      initials: (user?.companyName || 'CA').slice(0, 2).toUpperCase(),
+    };
 
   // Employer's jobs
   const employerJobs = jobs.filter((j) => j.companyId === company.id);
