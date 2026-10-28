@@ -10,7 +10,7 @@ export default function SEO({
   description,
   canonicalPath = '/',
   ogType = 'website',
-  ogImage = 'https://cadwar.in/favicon.svg',
+  ogImage = 'https://cadwar.in/favicon-512x512.png',
   jsonLd = null,
   noindex = false,
 }) {

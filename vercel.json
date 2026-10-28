@@ -47,7 +47,7 @@
       "dest": "/client/assets/$1"
     },
     {
-      "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|txt|xml))",
+      "src": "/(.*\\.(png|jpg|jpeg|gif|svg|ico|webp|txt|xml|json|webmanifest))",
       "dest": "/client/$1"
     },
     {

@@ -90,7 +90,7 @@ export default function JobDetails() {
       '@type': 'Organization',
       name: displayName,
       sameAs: company.website && !company.website.includes('casetu.com') ? company.website : 'https://cadwar.in',
-      logo: 'https://cadwar.in/favicon.svg',
+      logo: 'https://cadwar.in/favicon-512x512.png',
     },
     jobLocation: {
       '@type': 'Place',
