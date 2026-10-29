@@ -47,6 +47,7 @@ export default function EmployerPostJob() {
     description: '',
     responsibilitiesText: '',
     skillsText: '',
+    applicationMethod: 'internal',
     applicationLink: '',
     recruiterEmail: '',
     isFeatured: false,
@@ -99,6 +100,7 @@ export default function EmployerPostJob() {
           skillsText: Array.isArray(existing.requiredSkills)
             ? existing.requiredSkills.join(', ')
             : '',
+          applicationMethod: existing.applicationMethod || (existing.applicationLink ? 'external' : existing.recruiterEmail ? 'email' : 'internal'),
           applicationLink: existing.applicationLink || '',
           recruiterEmail: existing.recruiterEmail || '',
           isFeatured: existing.isFeatured || false,
@@ -251,6 +253,37 @@ export default function EmployerPostJob() {
     const finalDomain =
       formData.domain === 'Other' ? customDomain.trim() : formData.domain;
 
+    // Validate Application Method & Destination
+    let sanitizedLink = (formData.applicationLink || '').trim();
+    let sanitizedEmail = (formData.recruiterEmail || '').trim();
+
+    if (formData.applicationMethod === 'external') {
+      if (!sanitizedLink) {
+        setError('Please provide an Application URL for the External Link application method.');
+        return;
+      }
+      if (!sanitizedLink.startsWith('http://') && !sanitizedLink.startsWith('https://')) {
+        sanitizedLink = 'https://' + sanitizedLink;
+      }
+      try {
+        new URL(sanitizedLink);
+      } catch {
+        setError('Please provide a valid Application URL (e.g. https://company.com/apply).');
+        return;
+      }
+      sanitizedEmail = '';
+    } else if (formData.applicationMethod === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!sanitizedEmail || !emailRegex.test(sanitizedEmail)) {
+        setError('Please provide a valid Application Email Address (e.g. careers@firm.com).');
+        return;
+      }
+      sanitizedLink = '';
+    } else {
+      sanitizedLink = '';
+      sanitizedEmail = '';
+    }
+
     const finalEligibility =
       formData.eligibility?.trim() ||
       (formData.category === 'industrial-training'
@@ -261,6 +294,9 @@ export default function EmployerPostJob() {
 
     const payload = {
       ...formData,
+      applicationMethod: formData.applicationMethod || 'internal',
+      applicationLink: sanitizedLink,
+      recruiterEmail: sanitizedEmail,
       eligibility: finalEligibility,
       domain: finalDomain,
       companyName: formData.companyName.trim(),
@@ -770,47 +806,146 @@ export default function EmployerPostJob() {
         </div>
 
         {/* Section 5: Application Channels & Spotlights */}
-        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-4">
-          <h2 className="text-base font-bold text-[#173B63]">
-            5. Application Channels & Featured Placement
-          </h2>
+        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 shadow-2xs space-y-5">
+          <div>
+            <h2 className="text-base font-bold text-[#173B63]">
+              5. Candidate Application Channel & Featured Spotlight
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Specify how applicants will apply to this vacancy. Only the fields relevant to your chosen method will be used.
+            </p>
+          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+          <div className="space-y-4 text-xs">
+            {/* Method Selection Radio Tiles */}
             <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Official Application Portal / Link (Optional)
+              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Application Method *
               </label>
-              <input
-                type="url"
-                name="applicationLink"
-                value={formData.applicationLink}
-                onChange={handleChange}
-                placeholder="https://company.com/careers/apply/..."
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
-              />
-              <p className="text-[11px] text-slate-400 mt-1">
-                Candidates can click to apply on external portal in addition to 1-click CV apply.
-              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    formData.applicationMethod === 'external'
+                      ? 'border-[#176FA8] bg-[#EEF6FC] ring-2 ring-[#176FA8]/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="applicationMethod"
+                    value="external"
+                    checked={formData.applicationMethod === 'external'}
+                    onChange={handleChange}
+                    className="mt-0.5 text-[#176FA8] focus:ring-[#176FA8]"
+                  />
+                  <div>
+                    <span className="font-bold text-sm text-[#173B63] block">External Link</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5 leading-snug">
+                      Google Form, LinkedIn Job URL, or company career portal
+                    </span>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    formData.applicationMethod === 'email'
+                      ? 'border-[#176FA8] bg-[#EEF6FC] ring-2 ring-[#176FA8]/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="applicationMethod"
+                    value="email"
+                    checked={formData.applicationMethod === 'email'}
+                    onChange={handleChange}
+                    className="mt-0.5 text-[#176FA8] focus:ring-[#176FA8]"
+                  />
+                  <div>
+                    <span className="font-bold text-sm text-[#173B63] block">Apply by Email</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5 leading-snug">
+                      Opens candidate's email client addressed directly to recruiter
+                    </span>
+                  </div>
+                </label>
+
+                <label
+                  className={`flex items-start gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${
+                    formData.applicationMethod === 'internal'
+                      ? 'border-[#176FA8] bg-[#EEF6FC] ring-2 ring-[#176FA8]/20'
+                      : 'border-slate-200 hover:border-slate-300 bg-white'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="applicationMethod"
+                    value="internal"
+                    checked={formData.applicationMethod === 'internal'}
+                    onChange={handleChange}
+                    className="mt-0.5 text-[#176FA8] focus:ring-[#176FA8]"
+                  />
+                  <div>
+                    <span className="font-bold text-sm text-[#173B63] block">CA Dwar Portal</span>
+                    <span className="text-[11px] text-slate-500 block mt-0.5 leading-snug">
+                      Direct 1-click candidate apply saved in platform database
+                    </span>
+                  </div>
+                </label>
+              </div>
             </div>
 
-            <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Recruiter / HR Email (Optional)
-              </label>
-              <input
-                type="email"
-                name="recruiterEmail"
-                value={formData.recruiterEmail}
-                onChange={handleChange}
-                placeholder="careers@firm.com"
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
-              />
-              <p className="text-[11px] text-slate-400 mt-1">
-                Display direct email for candidates to send resumes directly.
-              </p>
-            </div>
+            {/* Destination Field: External Link */}
+            {formData.applicationMethod === 'external' && (
+              <div className="pt-2 animate-in fade-in">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Official Application URL *
+                </label>
+                <input
+                  type="url"
+                  name="applicationLink"
+                  required
+                  value={formData.applicationLink}
+                  onChange={handleChange}
+                  placeholder="https://docs.google.com/forms/... or https://company.com/apply"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Applicants will be redirected safely to this link when clicking "Apply Now".
+                </p>
+              </div>
+            )}
 
-            <div className="sm:col-span-2 pt-2 flex items-center gap-2">
+            {/* Destination Field: Email */}
+            {formData.applicationMethod === 'email' && (
+              <div className="pt-2 animate-in fade-in">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Recruiter / Application Email Address *
+                </label>
+                <input
+                  type="email"
+                  name="recruiterEmail"
+                  required
+                  value={formData.recruiterEmail}
+                  onChange={handleChange}
+                  placeholder="careers@firm.com or hr@company.in"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
+                />
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Clicking "Apply Now" will prepare a prefilled email with the role title and company name addressed to this inbox.
+                </p>
+              </div>
+            )}
+
+            {/* Destination Info: Internal */}
+            {formData.applicationMethod === 'internal' && (
+              <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 animate-in fade-in">
+                <p className="font-semibold text-slate-800 mb-0.5">Platform Internal Application</p>
+                Candidates apply directly with their registered CA Dwar student profile and uploaded resume. Applications are saved in the database and manageable in the Admin Dashboard.
+              </div>
+            )}
+
+            {/* Featured Checkbox */}
+            <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
               <input
                 type="checkbox"
                 id="isFeatured"
@@ -820,7 +955,7 @@ export default function EmployerPostJob() {
                 className="rounded border-slate-300 text-[#176FA8] focus:ring-[#176FA8]"
               />
               <label htmlFor="isFeatured" className="text-xs text-slate-700 font-medium">
-                Mark as <strong>Featured Spotlight</strong> (highlighted with gold badge on homepage & categories)
+                Mark as <strong>Featured Spotlight</strong> (highlighted with badge across categories and home)
               </label>
             </div>
           </div>

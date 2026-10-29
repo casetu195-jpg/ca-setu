@@ -8,29 +8,22 @@ import SEO from '../components/common/SEO';
 import {
   GraduationCap,
   Briefcase,
-  Building,
-  CheckCircle2,
   TrendingUp,
   ShieldCheck,
+  CheckCircle2,
   Users,
   ArrowRight,
   Sparkles,
+  Search,
 } from 'lucide-react';
 
 export default function Home() {
-  const { jobs, companies } = useJobs();
+  const { jobs, companies, categoryStats, categoryStatsLoading } = useJobs();
   const navigate = useNavigate();
 
-  // Dynamic counts for each category
-  const articleshipCount = jobs.filter(
-    (j) => j.category === 'articleship' && j.status === 'Published'
-  ).length;
-  const industrialCount = jobs.filter(
-    (j) => j.category === 'industrial-training' && j.status === 'Published'
-  ).length;
-  const jobsCount = jobs.filter(
-    (j) => j.category === 'ca-jobs' && j.status === 'Published'
-  ).length;
+  const articleshipStats = categoryStats?.articleship || { activeOpenings: 0, applicationsSubmitted: 0 };
+  const industrialStats = categoryStats?.['industrial-training'] || { activeOpenings: 0, applicationsSubmitted: 0 };
+  const caJobsStats = categoryStats?.['ca-jobs'] || { activeOpenings: 0, applicationsSubmitted: 0 };
 
   // Featured jobs (up to 6)
   const featuredJobs = jobs
@@ -47,155 +40,244 @@ export default function Home() {
         description="Explore CA Articleship, Industrial Training and CA job opportunities across India on CA Dwar. Discover openings and connect with recruiters."
         canonicalPath="/"
       />
-      {/* 1. Hero Section */}
-      <section className="relative pt-12 pb-16 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#EEF6FC]/70 via-white to-transparent">
-        <div className="max-w-5xl mx-auto text-center space-y-5">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF6FC] border border-[#176FA8]/20 text-[#176FA8] text-xs font-bold uppercase tracking-wider shadow-2xs">
-            <Sparkles className="w-3.5 h-3.5 text-[#176FA8]" />
-            <span>Exclusively Built for the Indian CA Ecosystem</span>
+
+      {/* 1. First Screen: Clean, Modern, Minimal Focus on 3 Core Categories */}
+      <section className="relative pt-8 sm:pt-12 pb-6 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-[#EEF6FC]/70 via-white to-transparent">
+        <div className="max-w-7xl mx-auto">
+          {/* Minimal Branding & Short Headline */}
+          <div className="text-center max-w-3xl mx-auto space-y-3">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#EEF6FC] border border-[#176FA8]/20 text-[#176FA8] text-xs font-bold uppercase tracking-wider shadow-2xs">
+              <Sparkles className="w-3.5 h-3.5 text-[#176FA8]" />
+              <span>CA Dwar · Verified CA Career Gateway</span>
+            </div>
+
+            <h1 className="text-3xl sm:text-5xl font-black text-[#173B63] tracking-tight leading-tight">
+              Chartered Accountancy <span className="text-[#176FA8]">Career Opportunities</span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-600 max-w-xl mx-auto">
+              Find verified openings across top CA firms and leading corporate finance teams in India.
+            </p>
           </div>
 
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-[#173B63] tracking-tight leading-[1.15]">
-            Find the Right Opportunity for Your <span className="text-[#176FA8]">CA Journey</span>
-          </h1>
+          {/* Three Prominent Category Cards with Dynamic Database Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+            {/* Category 1: CA Articleship */}
+            <div
+              onClick={() => navigate('/articleship')}
+              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-[#176FA8] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#176FA8] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                    <GraduationCap className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#176FA8] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                    CA Intermediate
+                  </span>
+                </div>
 
-          <p className="text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
-            Discover Articleship, Industrial Training and Finance leadership roles built specifically for Chartered Accountancy students and finance professionals.
-          </p>
+                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-[#176FA8] transition-colors">
+                  CA Articleship
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Mandatory practical training in Audit, Tax & Advisory.
+                </p>
 
-          {/* Main Search Component */}
-          <div className="pt-4">
-            <SearchBar />
+                {/* Live Statistics Block */}
+                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <span className="font-black text-base text-[#173B63]">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        articleshipStats.activeOpenings
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-px bg-slate-200" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
+                    <span className="font-black text-base text-[#176FA8]">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        articleshipStats.applicationsSubmitted
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/articleship');
+                }}
+                className="w-full py-3 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-[#176FA8]"
+              >
+                <span>Explore Articleship</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            {/* Category 2: CA Industrial Training */}
+            <div
+              onClick={() => navigate('/industrial-training')}
+              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-purple-600 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                    <TrendingUp className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
+                    CA Final Students
+                  </span>
+                </div>
+
+                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-purple-700 transition-colors">
+                  CA Industrial Training
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Corporate training in IB, Private Equity, FP&A & Treasury.
+                </p>
+
+                {/* Live Statistics Block */}
+                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <span className="font-black text-base text-[#173B63]">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        industrialStats.activeOpenings
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-px bg-slate-200" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
+                    <span className="font-black text-base text-purple-700">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        industrialStats.applicationsSubmitted
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/industrial-training');
+                }}
+                className="w-full py-3 bg-[#173B63] hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-purple-700"
+              >
+                <span>Explore Industrial Training</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
+
+            {/* Category 3: CA Qualified Jobs */}
+            <div
+              onClick={() => navigate('/ca-jobs')}
+              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-emerald-600 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                    <Briefcase className="w-6 h-6" />
+                  </div>
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                    Qualified CAs
+                  </span>
+                </div>
+
+                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-emerald-700 transition-colors">
+                  CA Qualified Jobs
+                </h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Full-time careers in Assurance, Taxation, Advisory & CFO suite.
+                </p>
+
+                {/* Live Statistics Block */}
+                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <span className="font-black text-base text-[#173B63]">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        caJobsStats.activeOpenings
+                      )}
+                    </span>
+                  </div>
+                  <div className="h-px bg-slate-200" />
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
+                    <span className="font-black text-base text-emerald-700">
+                      {categoryStatsLoading ? (
+                        <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
+                      ) : (
+                        caJobsStats.applicationsSubmitted
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate('/ca-jobs');
+                }}
+                className="w-full py-3 bg-[#173B63] hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-emerald-700"
+              >
+                <span>Explore CA Jobs</span>
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
+        </div>
+      </section>
 
-          {/* Quick Filter Tag Pills */}
+      {/* 2. Compact Search & Popular Tags Section */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-5 shadow-2xs space-y-3">
+          <SearchBar />
           <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs text-slate-500">
-            <span className="font-semibold text-slate-700">Popular Searches:</span>
+            <span className="font-semibold text-slate-700">Quick Searches:</span>
             <Link
               to="/industrial-training?domain=private-equity"
-              className="px-2.5 py-1 rounded-full bg-white border border-[#DCE5ED] hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
+              className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
             >
               Private Equity Industrial
             </Link>
             <Link
               to="/industrial-training?domain=investment-banking"
-              className="px-2.5 py-1 rounded-full bg-white border border-[#DCE5ED] hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
+              className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
             >
               Investment Banking
             </Link>
             <Link
               to="/articleship?domain=statutory-audit"
-              className="px-2.5 py-1 rounded-full bg-white border border-[#DCE5ED] hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
+              className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
             >
               Statutory Audit
             </Link>
             <Link
               to="/articleship?city=mumbai"
-              className="px-2.5 py-1 rounded-full bg-white border border-[#DCE5ED] hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
+              className="px-2.5 py-1 rounded-full bg-slate-50 border border-slate-200 hover:border-[#176FA8] hover:text-[#176FA8] transition-colors"
             >
               Articleship Mumbai
             </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* 2. Three Core Category Cards */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center max-w-xl mx-auto mb-8">
-          <h2 className="text-2xl font-bold text-[#173B63]">
-            Explore by Your CA Milestone
-          </h2>
-          <p className="text-sm text-slate-600 mt-1">
-            Tailored categories conforming strictly to ICAI regulations and corporate training windows.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1: Articleship */}
-          <div
-            onClick={() => navigate('/articleship')}
-            className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 hover:border-[#176FA8] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#176FA8] flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
-                <GraduationCap className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#176FA8]">
-                For CA Intermediate Students
-              </span>
-              <h3 className="text-xl font-bold text-[#173B63] mt-1 group-hover:text-[#176FA8] transition-colors">
-                Articleship Training
-              </h3>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                2-year mandatory practical training across Statutory Audit, Direct Tax, GST, and Risk Advisory in Top 20 & reputable CA firms.
-              </p>
-            </div>
-            <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between">
-              <span className="text-xs font-extrabold text-[#173B63] bg-slate-100 px-3 py-1 rounded-full">
-                {articleshipCount} Active Openings
-              </span>
-              <span className="text-sm font-semibold text-[#176FA8] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Browse Articleship <ArrowRight className="w-4 h-4" />
-              </span>
-            </div>
-          </div>
-
-          {/* Card 2: Industrial Training */}
-          <div
-            onClick={() => navigate('/industrial-training')}
-            className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 hover:border-[#176FA8] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
-                <TrendingUp className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-purple-700">
-                For CA Final Students
-              </span>
-              <h3 className="text-xl font-bold text-[#173B63] mt-1 group-hover:text-[#176FA8] transition-colors">
-                Industrial Training
-              </h3>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                High-exposure 9 to 12-month corporate training in Investment Banking, Growth Private Equity, Corporate Finance, and FP&A.
-              </p>
-            </div>
-            <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between">
-              <span className="text-xs font-extrabold text-[#173B63] bg-purple-50 text-purple-800 px-3 py-1 rounded-full">
-                {industrialCount} Active Openings
-              </span>
-              <span className="text-sm font-semibold text-[#176FA8] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Browse Industrial <ArrowRight className="w-4 h-4" />
-              </span>
-            </div>
-          </div>
-
-          {/* Card 3: CA Jobs */}
-          <div
-            onClick={() => navigate('/ca-jobs')}
-            className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 hover:border-[#176FA8] hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between"
-          >
-            <div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xl mb-4 group-hover:scale-105 transition-transform">
-                <Briefcase className="w-6 h-6" />
-              </div>
-              <span className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                For Finalists & Qualified CAs
-              </span>
-              <h3 className="text-xl font-bold text-[#173B63] mt-1 group-hover:text-[#176FA8] transition-colors">
-                CA Qualified Jobs
-              </h3>
-              <p className="text-sm text-slate-600 mt-2 leading-relaxed">
-                Full-time finance roles for fresher and experienced Chartered Accountants across assurance, transaction advisory, and CFO offices.
-              </p>
-            </div>
-            <div className="pt-6 border-t border-slate-100 mt-6 flex items-center justify-between">
-              <span className="text-xs font-extrabold text-[#173B63] bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full">
-                {jobsCount} Active Openings
-              </span>
-              <span className="text-sm font-semibold text-[#176FA8] flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                Browse CA Jobs <ArrowRight className="w-4 h-4" />
-              </span>
-            </div>
           </div>
         </div>
       </section>
@@ -211,12 +293,12 @@ export default function Home() {
               </h2>
             </div>
             <p className="text-sm text-slate-600 mt-0.5">
-              Hand-picked openings from CA Dwar Verified firms and leading corporations.
+              Verified openings from CA Dwar partner firms and leading organizations.
             </p>
           </div>
 
           <Link
-            to="/articleship"
+            to="/jobs"
             className="text-sm font-bold text-[#176FA8] hover:underline flex items-center gap-1"
           >
             View All Openings &rarr;
@@ -241,7 +323,7 @@ export default function Home() {
               Why CA Aspirants & Firms Choose CA Dwar
             </h2>
             <p className="text-sm sm:text-base text-slate-300">
-              Generic job boards don't understand attempts, groups cleared, or ICAI transfer guidelines. We built an intentional platform just for our fraternity.
+              Generic job boards don't understand attempts, groups cleared, or ICAI training regulations. We built a dedicated gateway for the CA fraternity.
             </p>
           </div>
 
@@ -250,7 +332,7 @@ export default function Home() {
               <ShieldCheck className="w-7 h-7 text-emerald-400" />
               <h4 className="font-bold text-base text-white">100% Verified Firms</h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Zero fake postings. Every CA firm is manually authenticated via their ICAI Firm Registration Number (FRN).
+                Zero spam postings. Every CA firm is authenticated via their ICAI Firm Registration Number (FRN).
               </p>
             </div>
 
@@ -258,23 +340,23 @@ export default function Home() {
               <CheckCircle2 className="w-7 h-7 text-blue-300" />
               <h4 className="font-bold text-base text-white">Transparent Stipends</h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                No misleading salary tags. Clearly published monthly stipends conforming to ICAI guidelines.
+                No misleading salary tags. Clearly published stipends conforming to ICAI guidelines.
               </p>
             </div>
 
             <div className="bg-white/10 rounded-2xl p-5 border border-white/10 space-y-2.5">
               <Users className="w-7 h-7 text-purple-300" />
-              <h4 className="font-bold text-base text-white">Smart CA Filters</h4>
+              <h4 className="font-bold text-base text-white">Dedicated CA Criteria</h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Filter candidates by CA Inter / Final groups cleared, attempt counts, and specialized finance skills.
+                Filter vacancies by CA Inter / Final groups cleared, attempts, and specialized finance domains.
               </p>
             </div>
 
             <div className="bg-white/10 rounded-2xl p-5 border border-white/10 space-y-2.5">
               <TrendingUp className="w-7 h-7 text-amber-300" />
-              <h4 className="font-bold text-base text-white">Live Application Tracker</h4>
+              <h4 className="font-bold text-base text-white">Direct Application Channels</h4>
               <p className="text-xs text-slate-300 leading-relaxed">
-                Never wonder where your resume went. Real-time updates from 'Under Review' to 'Shortlisted' and 'Selected'.
+                Connect directly through official application forms, direct recruiter emails, or 1-click profiles.
               </p>
             </div>
           </div>
@@ -289,7 +371,7 @@ export default function Home() {
               Hiring Partners on CA Dwar
             </h2>
             <p className="text-sm text-slate-600 mt-0.5">
-              Leading national audit networks, corporate conglomerates, and investment banks.
+              Audit networks, corporate conglomerates, and investment banks.
             </p>
           </div>
 
@@ -334,7 +416,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 6. Bottom CTA for CA Firms */}
+      {/* 6. Bottom CTA for CA Firms & Employers */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-[#EEF6FC] border border-[#176FA8]/20 rounded-2xl p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
           <div className="space-y-1 text-center sm:text-left">
@@ -346,10 +428,10 @@ export default function Home() {
             </p>
           </div>
           <Link
-            to="/employer/dashboard"
+            to="/employer/post-job"
             className="px-6 py-3 bg-[#173B63] hover:bg-[#176FA8] text-white text-sm font-bold rounded-xl shadow-xs transition-colors shrink-0"
           >
-            Post an Opportunity for Free &rarr;
+            Post an Opportunity &rarr;
           </Link>
         </div>
       </section>

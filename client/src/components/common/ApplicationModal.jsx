@@ -18,10 +18,10 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
 
   const alreadyApplied = isAuthenticated && hasApplied(job.id, user?.id, user?.email);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      navigate('/login?redirect=/jobs/' + job.id);
+      navigate('/login?redirect=/jobs/' + (job.id || job._id));
       return;
     }
 
@@ -33,20 +33,23 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
     setSubmitting(true);
     setError('');
 
-    setTimeout(() => {
-      const res = applyToJob({
-        jobId: job.id,
+    try {
+      const res = await applyToJob({
+        jobId: job.id || job._id,
         student: user,
         coverNote,
       });
 
       setSubmitting(false);
-      if (res.success) {
+      if (res && res.success) {
         setIsSuccess(true);
       } else {
-        setError(res.message || 'Failed to submit application.');
+        setError(res?.message || 'Failed to submit application to database.');
       }
-    }, 400);
+    } catch (err) {
+      setSubmitting(false);
+      setError(err?.message || 'Network error occurred while submitting application.');
+    }
   };
 
   return (
@@ -103,7 +106,7 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
               Application Submitted!
             </h3>
             <p className="text-sm text-slate-600 mb-6 max-w-sm mx-auto">
-              Your profile and resume have been sent directly to the hiring partner. You can track status updates in your dashboard.
+              Your profile and application have been recorded successfully in the CA Dwar database. You can track status updates in your student dashboard.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <button

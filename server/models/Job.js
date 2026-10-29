@@ -104,6 +104,12 @@ const jobSchema = new mongoose.Schema(
       type: String,
       default: 'Recently',
     },
+    applicationMethod: {
+      type: String,
+      enum: ['external', 'email', 'internal'],
+      default: 'internal',
+      index: true,
+    },
     applicationLink: {
       type: String,
       trim: true,

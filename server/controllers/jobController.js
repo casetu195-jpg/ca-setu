@@ -1,5 +1,6 @@
 import { Job } from '../models/Job.js';
 import { Company } from '../models/Company.js';
+import { Application } from '../models/Application.js';
 
 // @desc    Get all published jobs with multi-facet filters
 // @route   GET /api/jobs
@@ -48,6 +49,18 @@ export async function getJobs(req, res, next) {
           j.eligibility = 'CA Finalist with min 12 months of completed articleship';
         }
       }
+
+      // Backward-compatible application method deduction
+      if (!j.applicationMethod) {
+        if (j.applicationLink && j.applicationLink.trim()) {
+          j.applicationMethod = 'external';
+        } else if (j.recruiterEmail && j.recruiterEmail.trim()) {
+          j.applicationMethod = 'email';
+        } else {
+          j.applicationMethod = 'internal';
+        }
+      }
+
       return j;
     });
 
@@ -55,6 +68,101 @@ export async function getJobs(req, res, next) {
       success: true,
       count: normalizedJobs.length,
       jobs: normalizedJobs,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+// @desc    Get live active vacancies and applications submitted per category
+// @route   GET /api/jobs/category-stats
+// @access  Public
+export async function getCategoryStats(req, res, next) {
+  try {
+    const now = new Date();
+
+    // 1. Match only active, published, non-expired vacancies
+    const activeMatch = {
+      status: 'Published',
+      $or: [
+        { expiresAt: { $exists: false } },
+        { expiresAt: null },
+        { expiresAt: { $gt: now } },
+      ],
+    };
+
+    const activeJobCounts = await Job.aggregate([
+      { $match: activeMatch },
+      {
+        $group: {
+          _id: '$category',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    // 2. Count actual application records submitted per category
+    const applicationCounts = await Application.aggregate([
+      {
+        $lookup: {
+          from: 'jobs',
+          let: { jId: '$jobId' },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $or: [
+                    { $eq: ['$_id', '$$jId'] },
+                    { $eq: [{ $toString: '$_id' }, { $toString: '$$jId' }] },
+                  ],
+                },
+              },
+            },
+            { $project: { category: 1 } },
+          ],
+          as: 'job',
+        },
+      },
+      { $unwind: '$job' },
+      {
+        $group: {
+          _id: '$job.category',
+          count: { $sum: 1 },
+        },
+      },
+    ]);
+
+    const stats = {
+      articleship: {
+        activeOpenings: 0,
+        applicationsSubmitted: 0,
+      },
+      'industrial-training': {
+        activeOpenings: 0,
+        applicationsSubmitted: 0,
+      },
+      'ca-jobs': {
+        activeOpenings: 0,
+        applicationsSubmitted: 0,
+      },
+    };
+
+    activeJobCounts.forEach((item) => {
+      if (item._id && stats[item._id]) {
+        stats[item._id].activeOpenings = item.count;
+      }
+    });
+
+    applicationCounts.forEach((item) => {
+      if (item._id && stats[item._id]) {
+        stats[item._id].applicationsSubmitted = item.count;
+      }
+    });
+
+    res.json({
+      success: true,
+      stats,
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(error);
@@ -82,6 +190,17 @@ export async function getJobById(req, res, next) {
         jobObj.eligibility = 'CA Finalist with min 12 months of completed articleship';
       }
     }
+
+    if (!jobObj.applicationMethod) {
+      if (jobObj.applicationLink && jobObj.applicationLink.trim()) {
+        jobObj.applicationMethod = 'external';
+      } else if (jobObj.recruiterEmail && jobObj.recruiterEmail.trim()) {
+        jobObj.applicationMethod = 'email';
+      } else {
+        jobObj.applicationMethod = 'internal';
+      }
+    }
+
     res.json({ success: true, job: jobObj });
   } catch (error) {
     next(error);
@@ -135,8 +254,45 @@ export async function createJob(req, res, next) {
       }
     }
 
+    // Application Method & Destination Validation
+    let applicationMethod = req.body.applicationMethod;
+    if (!applicationMethod) {
+      if (req.body.applicationLink && req.body.applicationLink.trim()) {
+        applicationMethod = 'external';
+      } else if (req.body.recruiterEmail && req.body.recruiterEmail.trim()) {
+        applicationMethod = 'email';
+      } else {
+        applicationMethod = 'internal';
+      }
+    }
+
+    let applicationLink = (req.body.applicationLink || '').trim();
+    let recruiterEmail = (req.body.recruiterEmail || '').trim();
+
+    if (applicationMethod === 'external') {
+      if (!applicationLink) {
+        return res.status(400).json({ success: false, message: 'Application URL is required for External Link method.' });
+      }
+      if (!applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
+        applicationLink = 'https://' + applicationLink;
+      }
+      try {
+        new URL(applicationLink);
+      } catch {
+        return res.status(400).json({ success: false, message: 'Please provide a valid application URL.' });
+      }
+    } else if (applicationMethod === 'email') {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!recruiterEmail || !emailRegex.test(recruiterEmail)) {
+        return res.status(400).json({ success: false, message: 'Please provide a valid application email address.' });
+      }
+    }
+
     const jobData = {
       ...req.body,
+      applicationMethod,
+      applicationLink: applicationMethod === 'external' ? applicationLink : '',
+      recruiterEmail: applicationMethod === 'email' ? recruiterEmail : '',
       eligibility: eligibility || req.body.eligibility,
       companyId: company._id,
       companyName: isAdmin ? rawCompanyName : company.name,
@@ -193,6 +349,32 @@ export async function updateJob(req, res, next) {
       !req.body.eligibility.trim()
     ) {
       req.body.eligibility = 'CA Finalist with min 12 months of completed articleship';
+    }
+
+    if (req.body.applicationMethod !== undefined) {
+      const method = req.body.applicationMethod;
+      if (method === 'external') {
+        let link = (req.body.applicationLink || '').trim();
+        if (!link) {
+          return res.status(400).json({ success: false, message: 'Application URL is required for External Link method.' });
+        }
+        if (!link.startsWith('http://') && !link.startsWith('https://')) {
+          link = 'https://' + link;
+        }
+        try {
+          new URL(link);
+          req.body.applicationLink = link;
+        } catch {
+          return res.status(400).json({ success: false, message: 'Please provide a valid application URL.' });
+        }
+      } else if (method === 'email') {
+        const email = (req.body.recruiterEmail || '').trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!email || !emailRegex.test(email)) {
+          return res.status(400).json({ success: false, message: 'Please provide a valid application email address.' });
+        }
+        req.body.recruiterEmail = email;
+      }
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {

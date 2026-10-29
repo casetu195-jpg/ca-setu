@@ -21,6 +21,10 @@ import {
   ShieldCheck,
   Users,
   Send,
+  ExternalLink,
+  Mail,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 export default function JobDetails() {
@@ -31,6 +35,7 @@ export default function JobDetails() {
 
   const [isApplyModalOpen, setIsApplyModalOpen] = useState(false);
   const [copyAlert, setCopyAlert] = useState(false);
+  const [copiedEmail, setCopiedEmail] = useState(false);
 
   const job = getJobById(id);
 
@@ -67,6 +72,41 @@ export default function JobDetails() {
   };
 
   const displayName = job.companyName || company.name;
+
+  // Determine effective application method (with backward-compatibility)
+  const appMethod =
+    job.applicationMethod ||
+    (job.applicationLink && job.applicationLink.trim()
+      ? 'external'
+      : job.recruiterEmail && job.recruiterEmail.trim()
+      ? 'email'
+      : 'internal');
+
+  let safeExternalUrl = '';
+  if (appMethod === 'external') {
+    const rawLink = (job.applicationLink || '').trim();
+    if (rawLink) {
+      safeExternalUrl =
+        rawLink.startsWith('http://') || rawLink.startsWith('https://')
+          ? rawLink
+          : `https://${rawLink}`;
+    }
+  }
+
+  const mailSubject = encodeURIComponent(`Application for ${job.title} - ${displayName}`);
+  const mailBody = encodeURIComponent(
+    `Dear Hiring Team at ${displayName},\n\nI am writing to apply for the ${job.title} vacancy listed on CA Dwar (Ref: ${job.id || id}).\n\nPlease find my resume and qualifications attached for your consideration.\n\nBest regards,\n[Your Name]\n[Contact Information]`
+  );
+  const mailtoHref = `mailto:${job.recruiterEmail || ''}?subject=${mailSubject}&body=${mailBody}`;
+
+  const handleCopyEmail = (e) => {
+    e.preventDefault();
+    if (job.recruiterEmail && navigator.clipboard) {
+      navigator.clipboard.writeText(job.recruiterEmail);
+      setCopiedEmail(true);
+      setTimeout(() => setCopiedEmail(false), 2000);
+    }
+  };
 
   const isSaved = isJobSaved(job.id);
   const alreadyApplied = hasApplied(job.id, user?.id, user?.email);
@@ -219,27 +259,6 @@ export default function JobDetails() {
             >
               <Share2 className="w-4 h-4" />
             </button>
-            {job.applicationLink && (
-              <a
-                href={job.applicationLink}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Apply on Official Portal</span>
-              </a>
-            )}
-            {job.recruiterEmail && (
-              <a
-                href={`mailto:${job.recruiterEmail}?subject=Application for ${job.title}`}
-                className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 truncate px-2"
-                title={`Email CV to ${job.recruiterEmail}`}
-              >
-                <span className="truncate">Email CV: {job.recruiterEmail}</span>
-              </a>
-            )}
-
             <button
               onClick={() => toggleSaveJob(job.id)}
               title={isSaved ? 'Saved' : 'Save'}
@@ -460,44 +479,84 @@ export default function JobDetails() {
               </p>
             </div>
 
-            {/* Apply Button */}
-            {alreadyApplied ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
-                <CheckCircle className="w-6 h-6 text-emerald-600 mx-auto" />
-                <p className="text-sm font-bold text-emerald-800">Application Submitted</p>
-                <p className="text-xs text-emerald-700">
-                  Track in your student applications tab.
+            {/* Action Buttons based on Application Method */}
+            {appMethod === 'external' ? (
+              <div className="space-y-2">
+                {safeExternalUrl ? (
+                  <a
+                    href={safeExternalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3.5 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span>Apply on Official Portal ↗</span>
+                  </a>
+                ) : (
+                  <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0" />
+                    <span>Application link is not configured for this vacancy.</span>
+                  </div>
+                )}
+                <p className="text-[11px] text-slate-400 text-center">
+                  Opens the official employer form in a new tab.
                 </p>
               </div>
-            ) : (
-              <button
-                onClick={() => setIsApplyModalOpen(true)}
-                className="w-full py-3.5 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
-              >
-                <Send className="w-4 h-4" />
-                <span>Apply for Opportunity</span>
-              </button>
-            )}
+            ) : appMethod === 'email' ? (
+              <div className="space-y-3">
+                <a
+                  href={mailtoHref}
+                  className="w-full py-3.5 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                >
+                  <Mail className="w-4 h-4" />
+                  <span>Apply via Email (Send CV)</span>
+                </a>
 
-            {job.applicationLink && (
-              <a
-                href={job.applicationLink}
-                target="_blank"
-                rel="noreferrer"
-                className="w-full py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5"
-              >
-                <ExternalLink className="w-3.5 h-3.5" />
-                <span>Apply on Official Portal</span>
-              </a>
-            )}
-            {job.recruiterEmail && (
-              <a
-                href={`mailto:${job.recruiterEmail}?subject=Application for ${job.title}`}
-                className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 truncate px-2"
-                title={`Email CV to ${job.recruiterEmail}`}
-              >
-                <span className="truncate">Email CV: {job.recruiterEmail}</span>
-              </a>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5 text-xs">
+                  <div className="flex items-center justify-between text-slate-500">
+                    <span className="font-medium">Application Email:</span>
+                    <button
+                      type="button"
+                      onClick={handleCopyEmail}
+                      className="text-[#176FA8] hover:underline font-semibold flex items-center gap-1"
+                    >
+                      {copiedEmail ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedEmail ? 'Copied' : 'Copy Email'}</span>
+                    </button>
+                  </div>
+                  <div className="font-bold text-[#173B63] break-all select-all">
+                    {job.recruiterEmail}
+                  </div>
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Opens your email client with prefilled details. Note: Opening an email does not confirm delivery; please send your email with CV attached.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {alreadyApplied ? (
+                  <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-center space-y-1">
+                    <CheckCircle className="w-6 h-6 text-emerald-600 mx-auto" />
+                    <p className="text-sm font-bold text-emerald-800">Application Recorded ✓</p>
+                    <p className="text-xs text-emerald-700">
+                      Saved in CA Dwar database. Track in your applications tab.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => setIsApplyModalOpen(true)}
+                      className="w-full py-3.5 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Send className="w-4 h-4" />
+                      <span>Apply on CA Dwar Portal</span>
+                    </button>
+                    <p className="text-[11px] text-slate-400 text-center">
+                      1-Click apply recorded directly into platform database.
+                    </p>
+                  </>
+                )}
+              </div>
             )}
 
             <button
@@ -537,7 +596,28 @@ export default function JobDetails() {
             <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-[#176FA8] text-[#176FA8]' : ''}`} />
           </button>
 
-          {alreadyApplied ? (
+          {appMethod === 'external' ? (
+            safeExternalUrl ? (
+              <a
+                href={safeExternalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-5 py-2.5 bg-[#173B63] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5"
+              >
+                <span>Apply on Portal ↗</span>
+              </a>
+            ) : (
+              <span className="text-xs text-slate-500 font-medium">Link Unavailable</span>
+            )
+          ) : appMethod === 'email' ? (
+            <a
+              href={mailtoHref}
+              className="px-5 py-2.5 bg-[#173B63] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5"
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span>Apply via Email</span>
+            </a>
+          ) : alreadyApplied ? (
             <span className="px-4 py-2.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200">
               Applied ✓
             </span>

@@ -48,6 +48,60 @@ export function JobProvider({ children }) {
     }
   });
 
+  // Dynamic live statistics from MongoDB Atlas
+  const [categoryStats, setCategoryStats] = useState({
+    articleship: { activeOpenings: 0, applicationsSubmitted: 0 },
+    'industrial-training': { activeOpenings: 0, applicationsSubmitted: 0 },
+    'ca-jobs': { activeOpenings: 0, applicationsSubmitted: 0 },
+  });
+  const [categoryStatsLoading, setCategoryStatsLoading] = useState(true);
+
+  const refreshCategoryStats = async () => {
+    try {
+      const res = await jobsAPI.getCategoryStats();
+      if (res.data?.success && res.data.stats) {
+        setCategoryStats(res.data.stats);
+        return res.data.stats;
+      }
+    } catch {
+      // Fallback: Calculate from current jobs and applications in state
+      const now = new Date();
+      const fallback = {
+        articleship: {
+          activeOpenings: jobs.filter(
+            (j) => j.category === 'articleship' && j.status === 'Published' && (!j.expiresAt || new Date(j.expiresAt) > now)
+          ).length,
+          applicationsSubmitted: applications.filter((a) => {
+            const j = jobs.find((job) => job.id === a.jobId || job._id === a.jobId);
+            return j?.category === 'articleship';
+          }).length,
+        },
+        'industrial-training': {
+          activeOpenings: jobs.filter(
+            (j) => j.category === 'industrial-training' && j.status === 'Published' && (!j.expiresAt || new Date(j.expiresAt) > now)
+          ).length,
+          applicationsSubmitted: applications.filter((a) => {
+            const j = jobs.find((job) => job.id === a.jobId || job._id === a.jobId);
+            return j?.category === 'industrial-training';
+          }).length,
+        },
+        'ca-jobs': {
+          activeOpenings: jobs.filter(
+            (j) => j.category === 'ca-jobs' && j.status === 'Published' && (!j.expiresAt || new Date(j.expiresAt) > now)
+          ).length,
+          applicationsSubmitted: applications.filter((a) => {
+            const j = jobs.find((job) => job.id === a.jobId || job._id === a.jobId);
+            return j?.category === 'ca-jobs';
+          }).length,
+        },
+      };
+      setCategoryStats(fallback);
+      return fallback;
+    } finally {
+      setCategoryStatsLoading(false);
+    }
+  };
+
   // Fetch latest data from backend API on initial mount
   useEffect(() => {
     jobsAPI
@@ -86,6 +140,9 @@ export function JobProvider({ children }) {
       .catch(() => {
         // Fallback to local applications
       });
+
+    // Fetch initial live statistics from MongoDB Atlas
+    refreshCategoryStats();
   }, []);
 
   // Sync state to local storage
@@ -114,21 +171,22 @@ export function JobProvider({ children }) {
 
   const isJobSaved = (jobId) => savedJobIds.includes(jobId);
 
-  // Apply to Job
+  // Apply to Job (Internal application to MongoDB Atlas)
   const applyToJob = async ({ jobId, student, coverNote }) => {
-    const job = jobs.find((j) => j.id === jobId);
+    const job = jobs.find((j) => j.id === jobId || j._id === jobId);
     if (!job) throw new Error('Job not found');
 
     // Duplicate Check
     const alreadyApplied = applications.some(
-      (a) => a.jobId === jobId && (a.studentId === student.id || a.studentEmail === student.email)
+      (a) =>
+        (a.jobId === jobId || a.jobId?._id === jobId || a.jobId?.id === jobId) &&
+        (a.studentId === student.id || a.studentId?._id === student.id || (student.email && a.studentEmail === student.email))
     );
     if (alreadyApplied) {
       return { success: false, message: 'You have already submitted an application for this vacancy.' };
     }
 
     try {
-      // Try sending to real backend API first
       const res = await applicationsAPI.apply(jobId, coverNote);
       if (res.data?.success && res.data.application) {
         const app = {
@@ -137,44 +195,19 @@ export function JobProvider({ children }) {
         };
         setApplications((prev) => [app, ...prev]);
         setJobs((prev) =>
-          prev.map((j) => (j.id === jobId ? { ...j, applicantCount: (j.applicantCount || 0) + 1 } : j))
+          prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, applicantCount: (j.applicantCount || 0) + 1 } : j))
         );
+        refreshCategoryStats();
         return { success: true, application: app };
       }
+      return { success: false, message: res.data?.message || 'Failed to submit application to database.' };
     } catch (apiErr) {
-      // Check duplicate error from server (409)
-      if (apiErr.response?.status === 409) {
-        return { success: false, message: apiErr.response.data.message || 'Already applied.' };
-      }
+      const errorMsg =
+        apiErr.response?.data?.message ||
+        apiErr.message ||
+        'Unable to record application in database. Please try again.';
+      return { success: false, message: errorMsg };
     }
-
-    // Local / Offline fallback
-    const newApplication = {
-      id: 'app-' + Date.now(),
-      jobId,
-      studentId: student.id,
-      studentName: student.name,
-      studentEmail: student.email,
-      studentPhone: student.phone || '+91 98765 43210',
-      caStage: student.caStage || 'Final',
-      groupsCleared: student.groupsCleared || 'Both Groups',
-      attemptsCount: student.attemptsCount || 1,
-      city: student.city || 'Mumbai',
-      appliedDate: new Date().toISOString(),
-      status: 'Applied',
-      coverNote: coverNote || '',
-      resumeUrl: student.resumeUrl || 'https://casetu.com/resumes/default-resume.pdf',
-      statusHistory: [
-        { status: 'Applied', date: new Date().toISOString(), note: 'Application submitted successfully on CA Dwar' },
-      ],
-    };
-
-    setApplications((prev) => [newApplication, ...prev]);
-    setJobs((prev) =>
-      prev.map((j) => (j.id === jobId ? { ...j, applicantCount: (j.applicantCount || 0) + 1 } : j))
-    );
-
-    return { success: true, application: newApplication };
   };
 
   const hasApplied = (jobId, studentId, studentEmail) => {
@@ -194,6 +227,7 @@ export function JobProvider({ children }) {
           companyId: res.data.job.companyId?._id || res.data.job.companyId || res.data.job.companyId?.id,
         };
         setJobs((prev) => [liveJob, ...prev]);
+        refreshCategoryStats();
         return liveJob;
       }
       throw new Error(res.data?.message || 'Database rejected vacancy save.');
@@ -213,6 +247,7 @@ export function JobProvider({ children }) {
       setJobs((prev) =>
         prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, status: newStatus } : j))
       );
+      refreshCategoryStats();
     } catch (err) {
       console.error('Failed to update job status in database:', err);
     }
@@ -223,6 +258,7 @@ export function JobProvider({ children }) {
     try {
       await jobsAPI.deleteJob(jobId);
       setJobs((prev) => prev.filter((j) => j.id !== jobId && j._id !== jobId));
+      refreshCategoryStats();
     } catch (apiErr) {
       const msg =
         apiErr.response?.data?.message ||
@@ -243,6 +279,7 @@ export function JobProvider({ children }) {
           companyId: res.data.job.companyId?._id || res.data.job.companyId || res.data.job.companyId?.id,
         };
         setJobs((prev) => prev.map((j) => (j.id === jobId || j._id === jobId ? updated : j)));
+        refreshCategoryStats();
         return updated;
       }
       throw new Error(res.data?.message || 'Failed to update vacancy in database.');
@@ -349,6 +386,9 @@ export function JobProvider({ children }) {
         updateApplicationStatus,
         getJobById,
         getCompanyById,
+        categoryStats,
+        categoryStatsLoading,
+        refreshCategoryStats,
       }}
     >
       {children}

@@ -69,6 +69,22 @@ export async function getMyApplications(req, res, next) {
   }
 }
 
+// @desc    Get all applications (Admin only)
+// @route   GET /api/applications
+// @access  Private (Admin)
+export async function getAllApplications(req, res, next) {
+  try {
+    const applications = await Application.find()
+      .populate('jobId')
+      .populate('studentId', 'name email phone')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, count: applications.length, applications });
+  } catch (error) {
+    next(error);
+  }
+}
+
 // @desc    Update applicant status (Applied, Shortlisted, Interview, Selected, Rejected)
 // @route   PUT /api/applications/:id/status
 // @access  Private (Employer / Admin)

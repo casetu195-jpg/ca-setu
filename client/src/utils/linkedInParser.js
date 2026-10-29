@@ -325,6 +325,7 @@ export function parseLinkedInPost(rawText, sourceUrl = '') {
       description: text,
       responsibilitiesText: (responsibilities.length > 0 ? responsibilities : defaultResp).join('\n'),
       skillsText: (skills.length > 0 ? skills : defaultSkills).join(', '),
+      applicationMethod: applicationLink ? 'external' : recruiterEmail ? 'email' : 'internal',
       recruiterEmail,
       applicationLink,
     },
