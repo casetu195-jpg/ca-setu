@@ -121,29 +121,40 @@ export function JobProvider({ children }) {
         // Fallback to local / cached dataset
       });
 
-    applicationsAPI
-      .getMyApplications()
-      .then((res) => {
-        if (res.data?.success && res.data.applications) {
-          const normalized = res.data.applications.map((a) => ({
-            ...a,
-            id: a._id || a.id,
-            jobId: a.jobId?._id || a.jobId?.id || a.jobId,
-          }));
-          setApplications((prev) => {
-            const map = new Map();
-            [...normalized, ...prev].forEach((item) => map.set(item.id, item));
-            return Array.from(map.values());
-          });
-        }
-      })
-      .catch(() => {
-        // Fallback to local applications
-      });
+    // Role-aware application fetching
+    refreshApplications();
 
     // Fetch initial live statistics from MongoDB Atlas
     refreshCategoryStats();
   }, []);
+
+  const refreshApplications = async () => {
+    try {
+      const token = localStorage.getItem('ca_setu_token');
+      const storedUser = localStorage.getItem('ca_setu_user');
+      if (!token || !storedUser) return;
+      const currentUser = JSON.parse(storedUser);
+
+      let res = null;
+      if (currentUser.role === 'admin') {
+        res = await applicationsAPI.getAllApplications();
+      } else if (currentUser.role === 'employer') {
+        res = await applicationsAPI.getEmployerApplications();
+      } else if (currentUser.role === 'student') {
+        res = await applicationsAPI.getMyApplications();
+      }
+
+      if (res?.data?.success && res.data.applications) {
+        const normalized = res.data.applications.map((a) => ({
+          ...a,
+          id: a._id || a.id,
+          jobId: a.jobId?._id || a.jobId?.id || a.jobId,
+          job: a.jobId,
+        }));
+        setApplications(normalized);
+      }
+    } catch {}
+  };
 
   // Sync state to local storage
   useEffect(() => {
@@ -172,7 +183,7 @@ export function JobProvider({ children }) {
   const isJobSaved = (jobId) => savedJobIds.includes(jobId);
 
   // Apply to Job (Internal application to MongoDB Atlas)
-  const applyToJob = async ({ jobId, student, coverNote }) => {
+  const applyToJob = async ({ jobId, student, coverNote, resumeUrl }) => {
     const job = jobs.find((j) => j.id === jobId || j._id === jobId);
     if (!job) throw new Error('Job not found');
 
@@ -187,7 +198,7 @@ export function JobProvider({ children }) {
     }
 
     try {
-      const res = await applicationsAPI.apply(jobId, coverNote);
+      const res = await applicationsAPI.apply(jobId, coverNote, resumeUrl);
       if (res.data?.success && res.data.application) {
         const app = {
           ...res.data.application,
@@ -198,6 +209,7 @@ export function JobProvider({ children }) {
           prev.map((j) => (j.id === jobId || j._id === jobId ? { ...j, applicantCount: (j.applicantCount || 0) + 1 } : j))
         );
         refreshCategoryStats();
+        refreshApplications();
         return { success: true, application: app };
       }
       return { success: false, message: res.data?.message || 'Failed to submit application to database.' };
@@ -358,8 +370,8 @@ export function JobProvider({ children }) {
   };
 
   // Lookup helpers
-  const getJobById = (id) => jobs.find((j) => j.id === id);
-  const getCompanyById = (id) => companies.find((c) => c.id === id);
+  const getJobById = (id) => jobs.find((j) => j.id === id || j._id === id);
+  const getCompanyById = (id) => companies.find((c) => c.id === id || c._id === id);
 
   return (
     <JobContext.Provider
@@ -389,6 +401,7 @@ export function JobProvider({ children }) {
         categoryStats,
         categoryStatsLoading,
         refreshCategoryStats,
+        refreshApplications,
       }}
     >
       {children}

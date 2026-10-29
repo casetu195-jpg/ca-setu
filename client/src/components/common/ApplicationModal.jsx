@@ -10,6 +10,7 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
   const navigate = useNavigate();
 
   const [coverNote, setCoverNote] = useState('');
+  const [resumeUrl, setResumeUrl] = useState(user?.resumeUrl || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -38,6 +39,7 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
         jobId: job.id || job._id,
         student: user,
         coverNote,
+        resumeUrl,
       });
 
       setSubmitting(false);
@@ -165,13 +167,32 @@ export default function ApplicationModal({ job, isOpen, onClose }) {
                     <span>{user.caStage || 'Final'} · {user.groupsCleared || 'Both Groups'}</span>
                   </div>
                   <div className="flex justify-between items-center text-slate-600">
-                    <span className="font-semibold text-slate-800">Resume Attached:</span>
-                    <span className="text-[#176FA8] font-medium flex items-center gap-1">
-                      <FileText className="w-3.5 h-3.5" />
-                      {user.resumeFileName || 'Aman_Sharma_CA_Resume.pdf'}
-                    </span>
+                    <span className="font-semibold text-slate-800">Resume Status:</span>
+                    {resumeUrl || user.resumeUrl ? (
+                      <span className="text-emerald-700 font-medium flex items-center gap-1">
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>Profile Resume Attached ✓</span>
+                      </span>
+                    ) : (
+                      <span className="text-slate-500 italic">No resume on file</span>
+                    )}
                   </div>
                 </div>
+
+                {!resumeUrl && !user.resumeUrl && (
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                      Resume Link (Google Drive / PDF URL - Optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={resumeUrl}
+                      onChange={(e) => setResumeUrl(e.target.value)}
+                      placeholder="https://drive.google.com/file/d/..."
+                      className="w-full text-xs text-[#152B45] p-2.5 rounded-xl border border-[#DCE5ED] focus:border-[#176FA8] focus:outline-hidden"
+                    />
+                  </div>
+                )}
 
                 {/* Cover Note Field */}
                 <div>

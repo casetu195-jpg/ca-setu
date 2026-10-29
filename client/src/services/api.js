@@ -59,8 +59,9 @@ export const jobsAPI = {
 
 // Applications endpoints
 export const applicationsAPI = {
-  apply: (jobId, coverNote) => api.post('/applications', { jobId, coverNote }),
+  apply: (jobId, coverNote, resumeUrl) => api.post('/applications', { jobId, coverNote, resumeUrl }),
   getMyApplications: () => api.get('/applications/my'),
+  getEmployerApplications: () => api.get('/applications/employer'),
   getAllApplications: () => api.get('/applications'),
   updateStatus: (id, status, note) => api.put(`/applications/${id}/status`, { status, note }),
 };

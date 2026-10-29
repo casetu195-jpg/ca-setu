@@ -65,14 +65,14 @@ export default function Home() {
             {/* Category 1: CA Articleship */}
             <div
               onClick={() => navigate('/articleship')}
-              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-[#176FA8] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+              className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-[#173B63] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-blue-50 text-[#176FA8] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-[#F0F7FF] text-[#173B63] border border-[#DCE5ED] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
                     <GraduationCap className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#176FA8] bg-blue-50 px-2.5 py-1 rounded-full border border-blue-100">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#173B63] bg-[#F0F7FF] px-2.5 py-1 rounded-full border border-[#DCE5ED]">
                     CA Intermediate
                   </span>
                 </div>
@@ -81,13 +81,16 @@ export default function Home() {
                   CA Articleship
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Mandatory practical training in Audit, Tax & Advisory.
+                  Mandatory ICAI practical training in Audit, Taxation & Advisory.
                 </p>
 
                 {/* Live Statistics Block */}
-                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 my-5 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Briefcase className="w-3.5 h-3.5 text-[#173B63]" />
+                      <span>Active Openings:</span>
+                    </div>
                     <span className="font-black text-base text-[#173B63]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
@@ -98,7 +101,10 @@ export default function Home() {
                   </div>
                   <div className="h-px bg-slate-200" />
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Applications Submitted:</span>
+                    </div>
                     <span className="font-black text-base text-[#176FA8]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
@@ -116,7 +122,7 @@ export default function Home() {
                   e.stopPropagation();
                   navigate('/articleship');
                 }}
-                className="w-full py-3 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-[#176FA8]"
+                className="w-full py-3 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-[#176FA8]"
               >
                 <span>Explore Articleship</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -126,29 +132,32 @@ export default function Home() {
             {/* Category 2: CA Industrial Training */}
             <div
               onClick={() => navigate('/industrial-training')}
-              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-purple-600 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+              className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-[#173B63] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-[#F0F7FF] text-[#173B63] border border-[#DCE5ED] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
                     <TrendingUp className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-purple-700 bg-purple-50 px-2.5 py-1 rounded-full border border-purple-100">
-                    CA Final Students
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#854D0E] bg-[#FEF9C3] px-2.5 py-1 rounded-full border border-[#FEF08A]">
+                    CA Final (12m+ Articleship)
                   </span>
                 </div>
 
-                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-purple-700 transition-colors">
+                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-[#176FA8] transition-colors">
                   CA Industrial Training
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Corporate training in IB, Private Equity, FP&A & Treasury.
+                  Corporate training in Treasury, FP&A, Investment Banking & Advisory.
                 </p>
 
                 {/* Live Statistics Block */}
-                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 my-5 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Briefcase className="w-3.5 h-3.5 text-[#173B63]" />
+                      <span>Active Openings:</span>
+                    </div>
                     <span className="font-black text-base text-[#173B63]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
@@ -159,8 +168,11 @@ export default function Home() {
                   </div>
                   <div className="h-px bg-slate-200" />
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
-                    <span className="font-black text-base text-purple-700">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Applications Submitted:</span>
+                    </div>
+                    <span className="font-black text-base text-[#176FA8]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
                       ) : (
@@ -177,7 +189,7 @@ export default function Home() {
                   e.stopPropagation();
                   navigate('/industrial-training');
                 }}
-                className="w-full py-3 bg-[#173B63] hover:bg-purple-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-purple-700"
+                className="w-full py-3 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-[#176FA8]"
               >
                 <span>Explore Industrial Training</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
@@ -187,29 +199,32 @@ export default function Home() {
             {/* Category 3: CA Qualified Jobs */}
             <div
               onClick={() => navigate('/ca-jobs')}
-              className="group relative bg-white border-2 border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-emerald-600 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer flex flex-col justify-between"
+              className="group relative bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-7 hover:border-[#173B63] hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
+                  <div className="w-12 h-12 rounded-xl bg-[#F0F7FF] text-[#173B63] border border-[#DCE5ED] flex items-center justify-center font-bold text-xl group-hover:scale-105 transition-transform">
                     <Briefcase className="w-6 h-6" />
                   </div>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                    Qualified CAs
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-[#173B63] bg-[#F0F7FF] px-2.5 py-1 rounded-full border border-[#DCE5ED]">
+                    Qualified Chartered Accountants
                   </span>
                 </div>
 
-                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-emerald-700 transition-colors">
+                <h2 className="text-2xl font-black text-[#173B63] group-hover:text-[#176FA8] transition-colors">
                   CA Qualified Jobs
                 </h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Full-time careers in Assurance, Taxation, Advisory & CFO suite.
+                  Full-time professional careers in Assurance, Taxation, Advisory & CFO office.
                 </p>
 
                 {/* Live Statistics Block */}
-                <div className="bg-[#F8FAFC] border border-[#DCE5ED] rounded-xl p-4 my-5 space-y-2.5">
+                <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-4 my-5 space-y-2.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Active Openings:</span>
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Briefcase className="w-3.5 h-3.5 text-[#173B63]" />
+                      <span>Active Openings:</span>
+                    </div>
                     <span className="font-black text-base text-[#173B63]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
@@ -220,8 +235,11 @@ export default function Home() {
                   </div>
                   <div className="h-px bg-slate-200" />
                   <div className="flex items-center justify-between text-xs">
-                    <span className="font-semibold text-slate-600">Applications Submitted:</span>
-                    <span className="font-black text-base text-emerald-700">
+                    <div className="flex items-center gap-1.5 font-semibold text-slate-600">
+                      <Users className="w-3.5 h-3.5 text-slate-500" />
+                      <span>Applications Submitted:</span>
+                    </div>
+                    <span className="font-black text-base text-[#176FA8]">
                       {categoryStatsLoading ? (
                         <span className="inline-block w-8 h-4 bg-slate-200 animate-pulse rounded" />
                       ) : (
@@ -238,7 +256,7 @@ export default function Home() {
                   e.stopPropagation();
                   navigate('/ca-jobs');
                 }}
-                className="w-full py-3 bg-[#173B63] hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-emerald-700"
+                className="w-full py-3 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 group-hover:bg-[#176FA8]"
               >
                 <span>Explore CA Jobs</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />

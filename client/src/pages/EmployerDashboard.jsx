@@ -28,7 +28,7 @@ export default function EmployerDashboard() {
 
   // Find employer's company (matches registered company or user company name)
   const company =
-    companies.find((c) => c.id === user?.companyId) || {
+    companies.find((c) => c.id === user?.companyId || c._id === user?.companyId || c.userId === user?.id) || {
       name: user?.companyName || 'Registered CA Employer',
       firmType: 'Partnership / LLP',
       isVerified: false,
@@ -36,14 +36,14 @@ export default function EmployerDashboard() {
     };
 
   // Employer's jobs
-  const employerJobs = jobs.filter((j) => j.companyId === company.id);
+  const employerJobs = jobs.filter((j) => {
+    const compId = j.companyId?._id || j.companyId?.id || j.companyId;
+    return compId === company.id || compId === company._id;
+  });
   const activeJobs = employerJobs.filter((j) => j.status === 'Published');
 
-  // Employer's applicants
-  const employerJobIds = employerJobs.map((j) => j.id);
-  const employerApplicants = applications.filter((a) =>
-    employerJobIds.includes(a.jobId)
-  );
+  // Employer's applicants (strictly scoped to this employer's jobs via backend)
+  const employerApplicants = applications;
 
   const shortlistedCount = employerApplicants.filter(
     (a) => a.status === 'Shortlisted' || a.status === 'Interview'

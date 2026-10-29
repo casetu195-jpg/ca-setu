@@ -27,15 +27,18 @@ export default function EmployerApplicants() {
   }
 
   const company =
-    companies.find((c) => c.id === user?.companyId) || (companies.length > 0 ? companies[0] : { id: '', name: user?.companyName || 'Employer' });
+    companies.find((c) => c.id === user?.companyId || c._id === user?.companyId || c.userId === user?.id) ||
+    (companies.length > 0 ? companies[0] : { id: '', name: user?.companyName || 'Employer' });
 
-  const employerJobs = jobs.filter((j) => j.companyId === company.id);
-  const employerJobIds = employerJobs.map((j) => j.id);
+  const employerJobs = jobs.filter((j) => {
+    const compId = j.companyId?._id || j.companyId?.id || j.companyId;
+    return compId === company.id || compId === company._id;
+  });
 
   // Filter applications belonging to employer's jobs
   const relevantApps = applications.filter((a) => {
-    if (!employerJobIds.includes(a.jobId)) return false;
-    if (filterJobId !== 'all' && a.jobId !== filterJobId) return false;
+    const appJobId = a.jobId?._id || a.jobId?.id || a.jobId;
+    if (filterJobId !== 'all' && appJobId !== filterJobId) return false;
     return true;
   });
 
@@ -188,15 +191,19 @@ export default function EmployerApplicants() {
                   {/* Actions: Status Dropdown & Resume */}
                   <div className="flex flex-wrap items-center gap-3 self-start lg:self-center">
                     {/* Resume Download / View */}
-                    <a
-                      href={app.resumeUrl || '#'}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
-                    >
-                      <FileText className="w-3.5 h-3.5 text-[#176FA8]" />
-                      <span>View Resume</span>
-                    </a>
+                    {app.resumeUrl ? (
+                      <a
+                        href={app.resumeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                      >
+                        <FileText className="w-3.5 h-3.5 text-[#176FA8]" />
+                        <span>View Resume</span>
+                      </a>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 italic px-2">No resume attached</span>
+                    )}
 
                     {/* Stage Status Selector */}
                     <div className="flex items-center gap-1.5">

@@ -98,6 +98,16 @@ export async function login(req, res, next) {
       });
     }
 
+    let companyId = null;
+    let companyName = null;
+    if (user.role === 'employer') {
+      const company = await Company.findOne({ userId: user._id });
+      if (company) {
+        companyId = company._id;
+        companyName = company.name;
+      }
+    }
+
     res.json({
       success: true,
       token: generateToken(user._id),
@@ -106,6 +116,8 @@ export async function login(req, res, next) {
         name: user.name,
         email: user.email,
         role: user.role,
+        companyId,
+        companyName,
       },
     });
   } catch (error) {
