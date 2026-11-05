@@ -17,6 +17,9 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+import TermsOfUse from './pages/TermsOfUse';
+import ConsentModal from './components/common/ConsentModal';
 
 // Student Pages
 import StudentDashboard from './pages/StudentDashboard';
@@ -65,6 +68,7 @@ export default function App() {
         <JobProvider>
           <div className="min-h-screen flex flex-col bg-[#F8FAFC] text-[#152B45]">
             <Header />
+            <ConsentModal />
             <main className="flex-1">
               <Routes>
                 {/* 1. Public Pages */}
@@ -80,6 +84,8 @@ export default function App() {
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                <Route path="/terms-of-use" element={<TermsOfUse />} />
 
                 {/* 2. Student Portal Routes */}
                 <Route

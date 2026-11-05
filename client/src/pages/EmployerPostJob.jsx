@@ -36,8 +36,8 @@ export default function EmployerPostJob() {
     domain: 'Statutory Audit & Assurance',
     city: 'Mumbai',
     workMode: 'On-site',
-    stipendMin: 15000,
-    stipendMax: 22000,
+    stipendMin: isAdmin ? '' : 15000,
+    stipendMax: isAdmin ? '' : 22000,
     stipendPeriod: 'Monthly',
     openVacancies: 2,
     requiredGroups: 'Both Groups',
@@ -292,8 +292,26 @@ export default function EmployerPostJob() {
         ? 'Qualified Chartered Accountant (ICAI Member)'
         : 'CA Intermediate cleared (Both Groups preferred)');
 
+    const minSalary =
+      formData.stipendMin !== '' && formData.stipendMin !== undefined && formData.stipendMin !== null
+        ? Number(formData.stipendMin)
+        : undefined;
+    const maxSalary =
+      formData.stipendMax !== '' && formData.stipendMax !== undefined && formData.stipendMax !== null
+        ? Number(formData.stipendMax)
+        : undefined;
+
+    if (!isAdmin) {
+      if (minSalary === undefined || isNaN(minSalary) || maxSalary === undefined || isNaN(maxSalary)) {
+        setError('Please enter minimum and maximum stipend / salary amounts.');
+        return;
+      }
+    }
+
     const payload = {
       ...formData,
+      stipendMin: minSalary,
+      stipendMax: maxSalary,
       applicationMethod: formData.applicationMethod || 'internal',
       applicationLink: sanitizedLink,
       recruiterEmail: sanitizedEmail,
@@ -712,26 +730,28 @@ export default function EmployerPostJob() {
 
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Minimum Amount (INR)
+                {isAdmin ? 'Minimum Amount (INR) – Optional' : 'Minimum Amount (INR)'}
               </label>
               <input
                 type="number"
                 name="stipendMin"
                 value={formData.stipendMin}
                 onChange={handleChange}
+                placeholder={isAdmin ? 'Leave blank if Not Disclosed' : 'e.g. 15000'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
             </div>
 
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Maximum Amount (INR)
+                {isAdmin ? 'Maximum Amount (INR) – Optional' : 'Maximum Amount (INR)'}
               </label>
               <input
                 type="number"
                 name="stipendMax"
                 value={formData.stipendMax}
                 onChange={handleChange}
+                placeholder={isAdmin ? 'Leave blank if Not Disclosed' : 'e.g. 25000'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:border-[#176FA8] focus:outline-hidden"
               />
             </div>

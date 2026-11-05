@@ -80,6 +80,16 @@ export default function Footer() {
                   Contact Us
                 </Link>
               </li>
+              <li>
+                <Link to="/privacy-policy" className="hover:text-[#176FA8] transition-colors">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms-of-use" className="hover:text-[#176FA8] transition-colors">
+                  Terms of Use
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -166,6 +176,14 @@ export default function Footer() {
             <p className="text-slate-500">
               Built to connect CA talent with opportunities.
             </p>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <Link to="/privacy-policy" className="hover:text-[#176FA8] underline">
+              Privacy Policy
+            </Link>
+            <span className="text-slate-300">•</span>
+            <Link to="/terms-of-use" className="hover:text-[#176FA8] underline">
+              Terms of Use
+            </Link>
           </div>
           <p className="text-center md:text-right max-w-xl text-[11px] text-slate-400">
             <strong>Disclaimer:</strong> CA Dwar is an independent career opportunities platform and is not affiliated, associated, authorized, or endorsed by The Institute of Chartered Accountants of India (ICAI).

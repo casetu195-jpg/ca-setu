@@ -320,6 +320,12 @@ export default function JobDetails() {
                   {categoryLabel}
                 </Link>
                 {company.isVerified && <VerifiedBadge size="sm" />}
+                {(job.isAdminVerified || job.postedByRole === 'admin') && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 shadow-2xs">
+                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Verified by CA Dwar Admin</span>
+                  </span>
+                )}
                 {isExpired && (
                   <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 bg-rose-50 px-2.5 py-0.5 rounded-full border border-rose-200">
                     Closed

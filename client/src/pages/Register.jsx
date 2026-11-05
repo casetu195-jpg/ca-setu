@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/common/SEO';
-import { User, Building2, Mail, Lock, Phone, AlertCircle, ArrowRight } from 'lucide-react';
+import GoogleSignInButton from '../components/common/GoogleSignInButton';
+import { User, Building2, Mail, Lock, Phone, AlertCircle, ArrowRight, ExternalLink } from 'lucide-react';
 
 export default function Register() {
   const [searchParams] = useSearchParams();
@@ -16,6 +17,8 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [companyName, setCompanyName] = useState('');
   const [frn, setFrn] = useState('');
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,6 +28,16 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (!privacyAccepted) {
+      setError('You must read and agree to the CA Dwar Privacy Policy to register.');
+      return;
+    }
+
+    if (!termsAccepted) {
+      setError('You must accept the CA Dwar Terms of Use to register.');
+      return;
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
@@ -45,6 +58,8 @@ export default function Register() {
         phone,
         companyName,
         frn,
+        privacyAccepted: true,
+        termsAccepted: true,
       });
 
       if (res.success) {
@@ -112,6 +127,19 @@ export default function Register() {
               <span>CA Firm / Corporate Employer</span>
             </button>
           </div>
+
+          {role === 'student' && (
+            <div className="space-y-4 mb-6">
+              <GoogleSignInButton isSignUp={true} />
+              <div className="relative flex items-center justify-center">
+                <div className="border-t border-slate-200 w-full" />
+                <span className="bg-white px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0">
+                  or register with email
+                </span>
+                <div className="border-t border-slate-200 w-full" />
+              </div>
+            </div>
+          )}
 
           {error && (
             <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
@@ -224,10 +252,59 @@ export default function Register() {
               </div>
             </div>
 
+            {/* Separate Mandatory Consent Checkboxes */}
+            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5 text-xs text-slate-700 mt-2">
+              <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  required
+                  checked={privacyAccepted}
+                  onChange={(e) => setPrivacyAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#173B63] focus:ring-[#176FA8] cursor-pointer"
+                />
+                <span className="leading-snug">
+                  I have read and agree to the{' '}
+                  <Link
+                    to="/privacy-policy"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-[#176FA8] underline inline-flex items-center gap-0.5"
+                  >
+                    <span>CA Dwar Privacy Policy</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                  .
+                </span>
+              </label>
+
+              <label className="flex items-start gap-2.5 cursor-pointer select-none pt-2 border-t border-slate-200">
+                <input
+                  type="checkbox"
+                  required
+                  checked={termsAccepted}
+                  onChange={(e) => setTermsAccepted(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-slate-300 text-[#173B63] focus:ring-[#176FA8] cursor-pointer"
+                />
+                <span className="leading-snug">
+                  I accept the{' '}
+                  <Link
+                    to="/terms-of-use"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-bold text-[#176FA8] underline inline-flex items-center gap-0.5"
+                  >
+                    <span>CA Dwar Terms of Use</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                  .
+                </span>
+              </label>
+            </div>
+
             <button
               type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-[#173B63] hover:bg-[#176FA8] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+              disabled={loading || !privacyAccepted || !termsAccepted}
+              className="w-full py-3 bg-[#173B63] hover:bg-[#176FA8] disabled:bg-slate-300 disabled:cursor-not-allowed text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 mt-4"
             >
               <span>{loading ? 'Creating Account...' : 'Complete Registration'}</span>
               <ArrowRight className="w-4 h-4" />

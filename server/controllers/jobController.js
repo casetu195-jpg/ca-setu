@@ -61,6 +61,23 @@ export async function getJobs(req, res, next) {
         }
       }
 
+      // Reliable identification for Admin verification badge
+      if (j.isAdminVerified === undefined || j.isAdminVerified === null) {
+        if (
+          j.postedByRole === 'admin' ||
+          j.postingSource === 'admin_dashboard' ||
+          (j.companyId && j.companyId.registrationNumber === 'VERIFIED-PARTNER')
+        ) {
+          j.isAdminVerified = true;
+          j.postedByRole = 'admin';
+          j.postingSource = 'admin_dashboard';
+          j.verifiedAt = j.verifiedAt || j.createdAt;
+        } else {
+          j.isAdminVerified = false;
+          j.postedByRole = 'employer';
+        }
+      }
+
       return j;
     });
 
@@ -201,6 +218,23 @@ export async function getJobById(req, res, next) {
       }
     }
 
+    // Reliable identification for Admin verification badge
+    if (jobObj.isAdminVerified === undefined || jobObj.isAdminVerified === null) {
+      if (
+        jobObj.postedByRole === 'admin' ||
+        jobObj.postingSource === 'admin_dashboard' ||
+        (jobObj.companyId && jobObj.companyId.registrationNumber === 'VERIFIED-PARTNER')
+      ) {
+        jobObj.isAdminVerified = true;
+        jobObj.postedByRole = 'admin';
+        jobObj.postingSource = 'admin_dashboard';
+        jobObj.verifiedAt = jobObj.verifiedAt || jobObj.createdAt;
+      } else {
+        jobObj.isAdminVerified = false;
+        jobObj.postedByRole = 'employer';
+      }
+    }
+
     res.json({ success: true, job: jobObj });
   } catch (error) {
     next(error);
@@ -288,8 +322,28 @@ export async function createJob(req, res, next) {
       }
     }
 
+    // Stipend / Salary handling: optional for Admin, required for regular Employers
+    let stipendMin = req.body.stipendMin !== undefined && req.body.stipendMin !== '' && req.body.stipendMin !== null
+      ? Number(req.body.stipendMin)
+      : undefined;
+    let stipendMax = req.body.stipendMax !== undefined && req.body.stipendMax !== '' && req.body.stipendMax !== null
+      ? Number(req.body.stipendMax)
+      : undefined;
+
+    if (!isAdmin) {
+      if (stipendMin === undefined || isNaN(stipendMin) || stipendMax === undefined || isNaN(stipendMax)) {
+        return res.status(400).json({ success: false, message: 'Minimum and Maximum stipend / salary are required for employer postings.' });
+      }
+    }
+
     const jobData = {
       ...req.body,
+      stipendMin: stipendMin !== undefined && !isNaN(stipendMin) ? stipendMin : undefined,
+      stipendMax: stipendMax !== undefined && !isNaN(stipendMax) ? stipendMax : undefined,
+      postedByRole: isAdmin ? 'admin' : 'employer',
+      postingSource: isAdmin ? 'admin_dashboard' : 'employer_portal',
+      isAdminVerified: isAdmin ? true : false,
+      verifiedAt: isAdmin ? new Date() : null,
       applicationMethod,
       applicationLink: applicationMethod === 'external' ? applicationLink : '',
       recruiterEmail: applicationMethod === 'email' ? recruiterEmail : '',
@@ -375,6 +429,13 @@ export async function updateJob(req, res, next) {
         }
         req.body.recruiterEmail = email;
       }
+    }
+
+    if (req.user.role !== 'admin') {
+      delete req.body.isAdminVerified;
+      delete req.body.postedByRole;
+      delete req.body.postingSource;
+      delete req.body.verifiedAt;
     }
 
     job = await Job.findByIdAndUpdate(req.params.id, req.body, {

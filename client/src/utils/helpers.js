@@ -4,21 +4,43 @@ export function formatStipend(job) {
   if (!job) return '';
   const { stipendMin, stipendMax, stipendPeriod } = job;
   
+  const hasMin = stipendMin !== undefined && stipendMin !== null && stipendMin !== '' && !isNaN(stipendMin) && Number(stipendMin) > 0;
+  const hasMax = stipendMax !== undefined && stipendMax !== null && stipendMax !== '' && !isNaN(stipendMax) && Number(stipendMax) > 0;
+
+  if (!hasMin && !hasMax) {
+    return 'Not Disclosed';
+  }
+
+  const formatNum = (num) => '₹' + Number(num).toLocaleString('en-IN');
+
   if (stipendPeriod === 'Per Annum') {
-    const minLakhs = (stipendMin / 100000).toFixed(1).replace('.0', '');
-    const maxLakhs = (stipendMax / 100000).toFixed(1).replace('.0', '');
-    return `₹${minLakhs}–₹${maxLakhs} LPA`;
+    if (hasMin && hasMax) {
+      const minLakhs = (stipendMin / 100000).toFixed(1).replace('.0', '');
+      const maxLakhs = (stipendMax / 100000).toFixed(1).replace('.0', '');
+      return `₹${minLakhs}–₹${maxLakhs} LPA`;
+    }
+    if (hasMin) {
+      const minLakhs = (stipendMin / 100000).toFixed(1).replace('.0', '');
+      return `₹${minLakhs} LPA`;
+    }
+    if (hasMax) {
+      const maxLakhs = (stipendMax / 100000).toFixed(1).replace('.0', '');
+      return `Up to ₹${maxLakhs} LPA`;
+    }
   }
 
   // Monthly
-  const formatNum = (num) => '₹' + Number(num).toLocaleString('en-IN');
-  if (stipendMin && stipendMax) {
+  if (hasMin && hasMax) {
     return `${formatNum(stipendMin)}–${formatNum(stipendMax)}/mo`;
   }
-  if (stipendMin) {
+  if (hasMin) {
     return `${formatNum(stipendMin)}/mo`;
   }
-  return 'Competitive Stipend';
+  if (hasMax) {
+    return `Up to ${formatNum(stipendMax)}/mo`;
+  }
+
+  return 'Not Disclosed';
 }
 
 export function formatDate(dateString) {

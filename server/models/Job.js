@@ -43,11 +43,9 @@ const jobSchema = new mongoose.Schema(
     },
     stipendMin: {
       type: Number,
-      required: true,
     },
     stipendMax: {
       type: Number,
-      required: true,
     },
     stipendPeriod: {
       type: String,
@@ -121,6 +119,23 @@ const jobSchema = new mongoose.Schema(
       type: String,
       trim: true,
     },
+    postedByRole: {
+      type: String,
+      enum: ['admin', 'employer'],
+      default: 'employer',
+      index: true,
+    },
+    postingSource: {
+      type: String,
+      enum: ['admin_dashboard', 'employer_portal', 'api', 'seed'],
+      default: 'employer_portal',
+    },
+    isAdminVerified: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    verifiedAt: Date,
     publishedAt: Date,
     expiresAt: Date,
   },

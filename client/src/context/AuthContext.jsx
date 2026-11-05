@@ -75,12 +75,29 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const register = async ({ name, email, password, role, phone, companyName, frn }) => {
+  const register = async ({
+    name,
+    email,
+    password,
+    role,
+    phone,
+    companyName,
+    frn,
+    privacyAccepted,
+    termsAccepted,
+  }) => {
     const normalizedEmail = email.trim().toLowerCase();
 
     // Guard: Prevent admin registration on client
     if (role === 'admin') {
       return { success: false, message: 'Admin accounts cannot be registered publicly.' };
+    }
+
+    if (!privacyAccepted) {
+      return { success: false, message: 'You must read and agree to the CA Dwar Privacy Policy to register.' };
+    }
+    if (!termsAccepted) {
+      return { success: false, message: 'You must accept the CA Dwar Terms of Use to register.' };
     }
 
     try {
@@ -92,6 +109,8 @@ export function AuthProvider({ children }) {
         phone,
         companyName,
         frn,
+        privacyAccepted: true,
+        termsAccepted: true,
       });
 
       if (res.data?.success && res.data?.token) {
@@ -120,6 +139,8 @@ export function AuthProvider({ children }) {
         caStage: role === 'student' ? 'Inter' : undefined,
         groupsCleared: role === 'student' ? 'Both Groups' : undefined,
         companyName: role === 'employer' ? companyName : undefined,
+        privacyConsent: { accepted: true, version: '1.0', consentedAt: new Date().toISOString() },
+        termsConsent: { accepted: true, version: '1.0', consentedAt: new Date().toISOString() },
       };
 
       const savedUsersDb = JSON.parse(localStorage.getItem('ca_setu_users_db') || '[]');
@@ -129,6 +150,57 @@ export function AuthProvider({ children }) {
       localStorage.setItem('ca_setu_user', JSON.stringify(newUser));
       setUser(newUser);
       return { success: true, user: newUser };
+    }
+  };
+
+  const loginWithGoogle = async (credential) => {
+    try {
+      const res = await authAPI.googleAuth(credential);
+      if (res.data?.success && res.data?.token) {
+        const { token, user: userData, isNewUser } = res.data;
+        localStorage.setItem('ca_setu_token', token);
+        localStorage.setItem('ca_setu_user', JSON.stringify(userData));
+        setUser(userData);
+        return { success: true, user: userData, isNewUser };
+      }
+      return { success: false, message: 'Google sign-in could not be completed.' };
+    } catch (err) {
+      return {
+        success: false,
+        message: err.response?.data?.message || err.message || 'Failed to authenticate with Google.',
+      };
+    }
+  };
+
+  const submitConsent = async ({ privacyAccepted, termsAccepted }) => {
+    try {
+      const res = await authAPI.recordConsent({
+        privacyAccepted: !!privacyAccepted,
+        termsAccepted: !!termsAccepted,
+        privacyVersion: '1.0',
+        termsVersion: '1.0',
+      });
+      if (res.data?.success) {
+        const updatedUser = {
+          ...user,
+          privacyConsent: res.data.privacyConsent,
+          termsConsent: res.data.termsConsent,
+        };
+        setUser(updatedUser);
+        localStorage.setItem('ca_setu_user', JSON.stringify(updatedUser));
+        return { success: true, user: updatedUser };
+      }
+      return { success: false, message: res.data?.message || 'Failed to save consent.' };
+    } catch (err) {
+      // Local fallback state update
+      const updatedUser = {
+        ...user,
+        privacyConsent: { accepted: !!privacyAccepted, version: '1.0', consentedAt: new Date().toISOString() },
+        termsConsent: { accepted: !!termsAccepted, version: '1.0', consentedAt: new Date().toISOString() },
+      };
+      setUser(updatedUser);
+      localStorage.setItem('ca_setu_user', JSON.stringify(updatedUser));
+      return { success: true, user: updatedUser };
     }
   };
 
@@ -146,6 +218,10 @@ export function AuthProvider({ children }) {
     return { success: true, user: updated };
   };
 
+  const hasAcceptedPrivacy = user?.privacyConsent?.accepted === true;
+  const hasAcceptedTerms = user?.termsConsent?.accepted === true;
+  const needsConsent = !!user && (!hasAcceptedPrivacy || !hasAcceptedTerms);
+
   return (
     <AuthContext.Provider
       value={{
@@ -155,7 +231,12 @@ export function AuthProvider({ children }) {
         isStudent: user?.role === 'student',
         isEmployer: user?.role === 'employer',
         isAdmin: user?.role === 'admin',
+        needsConsent,
+        hasAcceptedPrivacy,
+        hasAcceptedTerms,
         login,
+        loginWithGoogle,
+        submitConsent,
         register,
         logout,
         updateStudentProfile,

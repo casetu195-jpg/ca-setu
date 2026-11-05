@@ -4,7 +4,7 @@ import { useJobs } from '../../context/JobContext';
 import { useAuth } from '../../context/AuthContext';
 import VerifiedBadge from './VerifiedBadge';
 import { formatStipend } from '../../utils/helpers';
-import { Bookmark, MapPin, Building2, Clock, Calendar, Sparkles, Briefcase } from 'lucide-react';
+import { Bookmark, MapPin, Building2, Clock, Calendar, Sparkles, Briefcase, CheckCircle } from 'lucide-react';
 
 export default function JobCard({ job, onApplyClick }) {
   const { isJobSaved, toggleSaveJob, getCompanyById, hasApplied } = useJobs();
@@ -102,6 +102,14 @@ export default function JobCard({ job, onApplyClick }) {
               </span>
               {company.isVerified && <VerifiedBadge size="sm" showText={false} />}
             </div>
+            {(job.isAdminVerified || job.postedByRole === 'admin') && (
+              <div className="mt-1.5">
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  <CheckCircle className="w-3 h-3 text-emerald-600 shrink-0" />
+                  <span>Verified by CA Dwar Admin</span>
+                </span>
+              </div>
+            )}
           </div>
         </div>
 

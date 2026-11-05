@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import SEO from '../components/common/SEO';
+import GoogleSignInButton from '../components/common/GoogleSignInButton';
 import { Mail, Lock, AlertCircle, ArrowRight, Shield } from 'lucide-react';
 
 export default function Login() {
@@ -56,13 +57,26 @@ export default function Login() {
         </div>
 
         {/* Secure Form */}
-        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-8 shadow-xs">
+        <div className="bg-white border border-[#DCE5ED] rounded-2xl p-6 sm:p-8 shadow-xs space-y-5">
           {error && (
-            <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
+
+          {/* Option 2: Continue with Google */}
+          <div>
+            <GoogleSignInButton redirect={redirect} />
+          </div>
+
+          <div className="relative flex items-center justify-center">
+            <div className="border-t border-slate-200 w-full" />
+            <span className="bg-white px-3 text-xs font-semibold uppercase tracking-wider text-slate-400 shrink-0">
+              or continue with email
+            </span>
+            <div className="border-t border-slate-200 w-full" />
+          </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
