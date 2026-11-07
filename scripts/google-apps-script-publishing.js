@@ -300,23 +300,9 @@ function evaluateApplicationDestination(urlStr, companyName) {
 }
 
 /**
- * Automatically creates the 'CA Dwar Tools' custom menu when the spreadsheet opens.
- * Preserves the existing Bulk Import Vacancies option alongside the new publishing integration.
- */
-function onOpen() {
-  var ui = SpreadsheetApp.getUi();
-  ui.createMenu('CA Dwar Tools')
-    .addItem('Bulk Import Vacancies', 'showBulkImport')
-    .addSeparator()
-    .addItem('Check Automation API Connection', 'checkAutomationConnection')
-    .addItem('Publish Approved Vacancies', 'publishApprovedVacancies')
-    .addToUi();
-}
-
-/**
  * Main action: Reads Research Queue, filters strictly approved vacancies,
  * validates genuine employer application destinations, asks for confirmation,
- * and securely publishes to https://cadwar.in.
+ * and securely publishes to https://www.cadwar.in.
  */
 function publishApprovedVacancies() {
   var ui = SpreadsheetApp.getUi();
