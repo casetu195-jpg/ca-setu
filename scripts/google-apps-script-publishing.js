@@ -300,15 +300,16 @@ function evaluateApplicationDestination(urlStr, companyName) {
 }
 
 /**
- * Automatically creates the 'CA Dwar' custom menu when the spreadsheet opens.
- * Preserves all existing menus, triggers, and onEdit approval protections.
+ * Automatically creates the 'CA Dwar Tools' custom menu when the spreadsheet opens.
+ * Preserves the existing Bulk Import Vacancies option alongside the new publishing integration.
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('CA Dwar')
-    .addItem('Publish Approved Vacancies', 'publishApprovedVacancies')
+  ui.createMenu('CA Dwar Tools')
+    .addItem('Bulk Import Vacancies', 'showBulkImport')
     .addSeparator()
     .addItem('Check Automation API Connection', 'checkAutomationConnection')
+    .addItem('Publish Approved Vacancies', 'publishApprovedVacancies')
     .addToUi();
 }
 
