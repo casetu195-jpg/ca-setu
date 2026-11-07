@@ -65,9 +65,11 @@ export const BLOCKED_SHORTENER_DOMAINS = [
 ];
 
 /**
- * Verified Application Forms platforms commonly used by genuine employers.
+ * Supported Application Form platforms commonly used by employers.
+ * Note: A URL on these platforms confirms the technical interface type,
+ * but manual verification is still required to confirm it was created by the stated employer.
  */
-export const VERIFIED_FORM_DOMAINS = [
+export const SUPPORTED_FORM_DOMAINS = [
   'forms.gle',
   'forms.office.com',
   'forms.microsoft.com',
@@ -79,9 +81,9 @@ export const VERIFIED_FORM_DOMAINS = [
 ];
 
 /**
- * Verified Enterprise Applicant Tracking Systems (ATS) used by employers.
+ * Supported Enterprise Applicant Tracking Systems (ATS) used by employers.
  */
-export const VERIFIED_ATS_DOMAINS = [
+export const SUPPORTED_ATS_DOMAINS = [
   'myworkdayjobs.com',
   'workday.com',
   'greenhouse.io',
@@ -151,12 +153,12 @@ export function isBlockedShortener(hostname) {
   return BLOCKED_SHORTENER_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
 }
 
-export function isVerifiedApplicationPlatform(hostname, pathname) {
+export function isSupportedApplicationPlatform(hostname, pathname) {
   if (!hostname) return false;
   if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
   if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').startsWith('/forms')) return true;
-  if (VERIFIED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
-  if (VERIFIED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (SUPPORTED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (SUPPORTED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
   return false;
 }
 
@@ -199,6 +201,9 @@ export function hasCareerSignals(hostname, pathname) {
 
 /**
  * Comprehensive destination evaluation using strict hostname parsing.
+ * Evaluates whether a destination URL is supported and appropriate for candidates.
+ * Note: Automated checks verify platform type; human verification (Verification Status = Verified)
+ * is strictly required to confirm that the specific form, portal, or recruiter email belongs to the employer.
  */
 export function evaluateApplicationDestination(urlStr, companyName = '') {
   const parsed = parseUrlDetails(urlStr);
@@ -206,7 +211,7 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
     return {
       status: 'INVALID_URL',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       reason: 'The provided application URL could not be parsed as a valid web address.',
     };
   }
@@ -217,7 +222,7 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
     return {
       status: 'BLOCKED_AGGREGATOR',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       hostname,
       reason: `Application destination '${hostname}' is a third-party job aggregator or competing listing board. CA Dwar candidates must not be redirected to job aggregators.`,
     };
@@ -227,19 +232,19 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
     return {
       status: 'BLOCKED_SHORTENER',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       hostname,
       reason: `Application destination '${hostname}' is a URL shortener. Direct employer destination must be provided.`,
     };
   }
 
-  if (isVerifiedApplicationPlatform(hostname, pathname)) {
+  if (isSupportedApplicationPlatform(hostname, pathname)) {
     return {
-      status: 'VERIFIED_PLATFORM',
+      status: 'SUPPORTED_PLATFORM',
       isAllowed: true,
-      isVerified: true,
+      isSupported: true,
       hostname,
-      reason: 'Verified employer application platform or official form.',
+      reason: 'Supported employer application platform or official form provider.',
     };
   }
 
@@ -247,24 +252,24 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
 
   if (matchesCompany) {
     return {
-      status: 'VERIFIED_EMPLOYER_DOMAIN',
+      status: 'MATCHING_EMPLOYER_DOMAIN',
       isAllowed: true,
-      isVerified: true,
+      isSupported: true,
       hostname,
-      reason: 'Verified direct employer corporate domain.',
+      reason: 'Employer corporate domain matching the hiring entity name.',
     };
   }
 
   // 5. Unknown or unverified external domain
   // Even if an arbitrary domain has '/careers' or '/job' in its path, if it does not correlate
-  // with the hiring company and is not a verified ATS or official form, it cannot be trusted automatically.
+  // with the hiring company and is not a recognized ATS or official form, it cannot be trusted automatically.
   // It must be held for manual verification to protect candidates.
   return {
     status: 'UNVERIFIED_DESTINATION',
     isAllowed: false,
-    isVerified: false,
+    isSupported: false,
     hostname,
-    reason: `Application destination '${hostname}' is an unverified external domain. CA Dwar requires employer-controlled career portals, verified ATS links, or official forms. Unverified destinations must be held for manual verification.`,
+    reason: `Application destination '${hostname}' is an unverified external domain. CA Dwar requires employer-controlled career portals, recognized ATS links, or official forms. Unverified destinations must be held for manual verification.`,
   };
 }
 
@@ -382,7 +387,7 @@ export async function publishJobFromAutomation(req, res, next) {
     if (verificationStatus !== 'Verified') {
       return res.status(400).json({
         success: false,
-        message: `Vacancy rejected: Verification Status must be 'Verified'. Current value is '${verificationStatus || 'None'}'. Unverified vacancies cannot be published.`,
+        message: `Vacancy rejected: Verification Status must be 'Verified'. Current value is '${verificationStatus || 'None'}'. To protect candidates, employer identity, application destination (including Google Forms, ATS portals, and careers pages), and recruiter contact details must be manually verified and confirmed as employer-controlled before publishing.`,
       });
     }
 
@@ -516,31 +521,31 @@ export async function publishJobFromAutomation(req, res, next) {
     if (applicationLink) {
       const destEval = evaluateApplicationDestination(applicationLink, companyName);
 
-      if (!destEval.isAllowed || !destEval.isVerified) {
+      if (!destEval.isAllowed || !destEval.isSupported) {
         if (isEmailValid) {
-          // Fall back cleanly to genuine recruiter email destination and clear disallowed/unverified link
+          // Fall back cleanly to verified recruiter email destination and clear disallowed/unverified link
           applicationMethod = 'email';
           applicationLink = '';
         } else {
-          // No genuine employer application channel available: reject publication and hold for manual verification
+          // No verified employer application channel available: reject publication and hold for manual verification
           return res.status(400).json({
             success: false,
             message: `Vacancy rejected: ${destEval.reason}`,
           });
         }
       } else {
-        // Link is verified and allowed: normalize protocol
+        // Link format is supported and allowed: normalize protocol
         if (!applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
           applicationLink = 'https://' + applicationLink;
         }
       }
     }
 
-    // Require at least one verified application destination or recruiter email
+    // Require at least one verified application destination or verified recruiter email
     if (!applicationLink && !isEmailValid) {
       return res.status(400).json({
         success: false,
-        message: 'Vacancy rejected: No genuine employer application destination or verified recruiter email was provided. Vacancies must contain either a verified employer career portal, ATS link, official form (Google/Microsoft), or verified recruiter email to be published.',
+        message: 'Vacancy rejected: No verified employer application destination or verified recruiter email was provided. Vacancies must contain either a confirmed employer career portal, recognized ATS link, confirmed employer form (Google/Microsoft), or verified recruiter email to be published.',
       });
     }
 

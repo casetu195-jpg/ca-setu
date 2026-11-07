@@ -75,7 +75,7 @@ const BLOCKED_SHORTENER_DOMAINS = [
   'buff.ly',
 ];
 
-const VERIFIED_FORM_DOMAINS = [
+const SUPPORTED_FORM_DOMAINS = [
   'forms.gle',
   'forms.office.com',
   'forms.microsoft.com',
@@ -86,7 +86,7 @@ const VERIFIED_FORM_DOMAINS = [
   'forms.zoho.in',
 ];
 
-const VERIFIED_ATS_DOMAINS = [
+const SUPPORTED_ATS_DOMAINS = [
   'myworkdayjobs.com',
   'workday.com',
   'greenhouse.io',
@@ -148,12 +148,12 @@ function isBlockedShortener(hostname) {
   return BLOCKED_SHORTENER_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
 }
 
-function isVerifiedApplicationPlatform(hostname, pathname) {
+function isSupportedApplicationPlatform(hostname, pathname) {
   if (!hostname) return false;
   if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
   if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').startsWith('/forms')) return true;
-  if (VERIFIED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
-  if (VERIFIED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (SUPPORTED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (SUPPORTED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
   return false;
 }
 
@@ -197,25 +197,25 @@ function hasCareerSignals(hostname, pathname) {
 function evaluateApplicationDestination(urlStr, companyName = '') {
   const parsed = parseUrlDetails(urlStr);
   if (!parsed) {
-    return { isAllowed: false, isVerified: false, reason: 'Invalid URL' };
+    return { isAllowed: false, isSupported: false, reason: 'Invalid URL' };
   }
 
   const { hostname, pathname } = parsed;
 
   if (isBlockedAggregator(hostname) || isBlockedShortener(hostname)) {
-    return { isAllowed: false, isVerified: false, hostname, reason: 'Blocked aggregator or shortener' };
+    return { isAllowed: false, isSupported: false, hostname, reason: 'Blocked aggregator or shortener' };
   }
 
-  if (isVerifiedApplicationPlatform(hostname, pathname)) {
-    return { isAllowed: true, isVerified: true, hostname, reason: 'Verified platform or form' };
+  if (isSupportedApplicationPlatform(hostname, pathname)) {
+    return { isAllowed: true, isSupported: true, hostname, reason: 'Supported application platform or official form' };
   }
 
   if (doesHostMatchCompany(hostname, companyName)) {
-    return { isAllowed: true, isVerified: true, hostname, reason: 'Verified employer corporate portal' };
+    return { isAllowed: true, isSupported: true, hostname, reason: 'Verified employer corporate portal' };
   }
 
-  // Arbitrary external domain not matching company name and not a verified ATS/form
-  return { isAllowed: false, isVerified: false, hostname, reason: 'Unverified external destination' };
+  // Arbitrary external domain not matching company name and not a supported ATS/form
+  return { isAllowed: false, isSupported: false, hostname, reason: 'Unverified external destination' };
 }
 
 export default function JobDetails() {
@@ -304,22 +304,22 @@ export default function JobDetails() {
 
   const rawLink = (job.applicationLink || '').trim();
   const destEval = rawLink ? evaluateApplicationDestination(rawLink, displayName) : null;
-  const isLinkAllowedAndVerified = destEval ? (destEval.isAllowed && destEval.isVerified) : false;
+  const isLinkAllowedAndSupported = destEval ? (destEval.isAllowed && destEval.isSupported) : false;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const hasValidRecruiterEmail = Boolean(job.recruiterEmail && emailRegex.test(job.recruiterEmail.trim()));
 
-  // Determine effective application method (with strict destination verification and fallback)
+  // Determine effective application method (with strict destination safeguards and fallback)
   let appMethod = job.applicationMethod;
   if (!appMethod) {
-    if (isLinkAllowedAndVerified) {
+    if (isLinkAllowedAndSupported) {
       appMethod = 'external';
     } else if (hasValidRecruiterEmail) {
       appMethod = 'email';
     } else {
       appMethod = 'internal';
     }
-  } else if (appMethod === 'external' && !isLinkAllowedAndVerified) {
+  } else if (appMethod === 'external' && !isLinkAllowedAndSupported) {
     // Strictly block CA Way, aggregators, and unverified external destinations; fallback to email or internal apply
     if (hasValidRecruiterEmail) {
       appMethod = 'email';
@@ -329,7 +329,7 @@ export default function JobDetails() {
   }
 
   let safeExternalUrl = '';
-  if (appMethod === 'external' && isLinkAllowedAndVerified && rawLink) {
+  if (appMethod === 'external' && isLinkAllowedAndSupported && rawLink) {
     safeExternalUrl =
       rawLink.startsWith('http://') || rawLink.startsWith('https://')
         ? rawLink

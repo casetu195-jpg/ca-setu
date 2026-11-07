@@ -69,9 +69,11 @@ var BLOCKED_SHORTENER_DOMAINS = [
 ];
 
 /**
- * Verified Application Forms platforms commonly used by genuine employers.
+ * Supported Application Form platforms commonly used by employers.
+ * Note: A recognized platform confirms the interface type, but manual verification
+ * is required to confirm that the specific form was provided by the stated employer.
  */
-var VERIFIED_FORM_DOMAINS = [
+var SUPPORTED_FORM_DOMAINS = [
   'forms.gle',
   'forms.office.com',
   'forms.microsoft.com',
@@ -83,9 +85,9 @@ var VERIFIED_FORM_DOMAINS = [
 ];
 
 /**
- * Verified Enterprise Applicant Tracking Systems (ATS) used by employers.
+ * Supported Enterprise Applicant Tracking Systems (ATS) used by employers.
  */
-var VERIFIED_ATS_DOMAINS = [
+var SUPPORTED_ATS_DOMAINS = [
   'myworkdayjobs.com',
   'workday.com',
   'greenhouse.io',
@@ -172,16 +174,16 @@ function isBlockedShortener(hostname) {
   return false;
 }
 
-function isVerifiedApplicationPlatform(hostname, pathname) {
+function isSupportedApplicationPlatform(hostname, pathname) {
   if (!hostname) return false;
   if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
   if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').indexOf('/forms') === 0) return true;
 
-  for (var i = 0; i < VERIFIED_FORM_DOMAINS.length; i++) {
-    if (isHostMatchingDomain(hostname, VERIFIED_FORM_DOMAINS[i])) return true;
+  for (var i = 0; i < SUPPORTED_FORM_DOMAINS.length; i++) {
+    if (isHostMatchingDomain(hostname, SUPPORTED_FORM_DOMAINS[i])) return true;
   }
-  for (var j = 0; j < VERIFIED_ATS_DOMAINS.length; j++) {
-    if (isHostMatchingDomain(hostname, VERIFIED_ATS_DOMAINS[j])) return true;
+  for (var j = 0; j < SUPPORTED_ATS_DOMAINS.length; j++) {
+    if (isHostMatchingDomain(hostname, SUPPORTED_ATS_DOMAINS[j])) return true;
   }
   return false;
 }
@@ -229,6 +231,9 @@ function hasCareerSignals(hostname, pathname) {
 
 /**
  * Comprehensive destination evaluation with strict hostname parsing.
+ * Evaluates whether a destination URL is supported and appropriate for candidates.
+ * Note: Automated checks verify platform type; human verification (Verification Status = Verified)
+ * is strictly required to confirm that the specific form, portal, or recruiter email belongs to the employer.
  */
 function evaluateApplicationDestination(urlStr, companyName) {
   var parsed = parseUrlDetails(urlStr);
@@ -236,7 +241,7 @@ function evaluateApplicationDestination(urlStr, companyName) {
     return {
       status: 'INVALID_URL',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       reason: 'The provided application URL could not be parsed as a valid web address.'
     };
   }
@@ -248,7 +253,7 @@ function evaluateApplicationDestination(urlStr, companyName) {
     return {
       status: 'BLOCKED_AGGREGATOR',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       hostname: hostname,
       reason: 'Application destination is a third-party aggregator (' + hostname + ').'
     };
@@ -258,37 +263,37 @@ function evaluateApplicationDestination(urlStr, companyName) {
     return {
       status: 'BLOCKED_SHORTENER',
       isAllowed: false,
-      isVerified: false,
+      isSupported: false,
       hostname: hostname,
       reason: 'Application destination is a URL shortener (' + hostname + ').'
     };
   }
 
-  if (isVerifiedApplicationPlatform(hostname, pathname)) {
+  if (isSupportedApplicationPlatform(hostname, pathname)) {
     return {
-      status: 'VERIFIED_PLATFORM',
+      status: 'SUPPORTED_PLATFORM',
       isAllowed: true,
-      isVerified: true,
+      isSupported: true,
       hostname: hostname,
-      reason: 'Verified application platform or official form.'
+      reason: 'Supported application platform or official form provider.'
     };
   }
 
   if (doesHostMatchCompany(hostname, companyName || '')) {
     return {
-      status: 'VERIFIED_EMPLOYER_DOMAIN',
+      status: 'MATCHING_EMPLOYER_DOMAIN',
       isAllowed: true,
-      isVerified: true,
+      isSupported: true,
       hostname: hostname,
-      reason: 'Verified direct employer corporate domain.'
+      reason: 'Employer corporate domain matching the hiring entity name.'
     };
   }
 
-  // Arbitrary external domain not matching company name and not a verified ATS/form
+  // Arbitrary external domain not matching company name and not a supported ATS/form
   return {
     status: 'UNVERIFIED_DESTINATION',
     isAllowed: false,
-    isVerified: false,
+    isSupported: false,
     hostname: hostname,
     reason: 'Application destination (' + hostname + ') is an unverified external domain.'
   };
@@ -420,6 +425,9 @@ function publishApprovedVacancies() {
     // STRICT APPROVAL SAFEGUARDS:
     // Only rows with Approval Status = Approved, Verification Status = Verified,
     // Duplicate Check = No Duplicate, and not already Published.
+    // NOTE: 'Verification Status = Verified' is the mandatory manual check confirming
+    // that employer identity, application destination (Google Form, ATS, portal), and
+    // recruiter contact details have been verified by the researcher/admin.
     if (
       aStatus === 'Approved' &&
       vStatus === 'Verified' &&
@@ -434,17 +442,17 @@ function publishApprovedVacancies() {
       var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       var hasValidEmail = rawContact && emailRegex.test(rawContact);
 
-      // SAFEGUARD 1: Strict Hostname Parsing & Destination Verification
+      // SAFEGUARD 1: Strict Hostname Parsing & Destination Safeguards
       if (rawAppUrl) {
         var destEval = evaluateApplicationDestination(rawAppUrl, rawCompName);
-        if (!destEval.isAllowed || !destEval.isVerified) {
+        if (!destEval.isAllowed || !destEval.isSupported) {
           if (hasValidEmail) {
-            // Fall back cleanly to the genuine employer recruiter email and clear aggregator/unverified URL
+            // Fall back cleanly to the verified employer recruiter email and clear aggregator/unverified URL
             rawAppUrl = '';
           } else {
             // Keep unpublished and notify user in Last Publish Response
             var heldMsg = destEval.status === 'BLOCKED_AGGREGATOR'
-              ? 'Held: Application URL is a third-party aggregator (' + destEval.hostname + '). Genuine employer destination or recruiter email required.'
+              ? 'Held: Application URL is a third-party aggregator (' + destEval.hostname + '). Genuine employer destination or verified recruiter email required.'
               : 'Held: Application destination (' + (destEval.hostname || rawAppUrl) + ') is unverified. Hold for manual verification or provide verified recruiter email.';
             sheet.getRange(i + 1, colLastResponse + 1).setValue(heldMsg);
             continue;
@@ -454,7 +462,7 @@ function publishApprovedVacancies() {
 
       // SAFEGUARD 2: If neither a direct employer application URL nor recruiter email exists, keep unpublished
       if (!rawAppUrl && !hasValidEmail) {
-        sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: No genuine employer application URL or recruiter email available.');
+        sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: No verified employer application URL or recruiter email available.');
         continue;
       }
 
@@ -489,11 +497,11 @@ function publishApprovedVacancies() {
       'No Vacancies Ready for Publishing',
       'No vacancies were found matching all required publishing criteria.\n\n' +
       'Every published vacancy must satisfy:\n' +
-      '  ✓ Verification Status = Verified\n' +
+      '  ✓ Verification Status = Verified (Employer identity, application destination, and recruiter contact verified)\n' +
       '  ✓ Duplicate Check = No Duplicate\n' +
       '  ✓ Approval Status = Approved\n' +
       '  ✓ Publish Status != Published\n' +
-      '  ✓ Genuine Employer Application Portal, ATS, Form, or Recruiter Email\n\n' +
+      '  ✓ Confirmed Employer Career Portal, Supported ATS Link, Confirmed Google Form, or Verified Recruiter Email\n\n' +
       'Please verify and approve vacancies manually in the Research Queue before publishing.',
       ui.ButtonSet.OK
     );
