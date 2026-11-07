@@ -333,70 +333,108 @@ function publishApprovedVacancies() {
     return;
   }
 
-  // 2. Identify column indexes dynamically from Row 1
+  // 2. Exact 25-Column Schema & Pre-Flight Header Validation
   var headers = data[0];
-  var colMap = {};
+  var headerCounts = {};
   for (var c = 0; c < headers.length; c++) {
-    var h = headers[c].toString().toLowerCase().trim();
-    colMap[h] = c;
+    var rawH = headers[c] ? headers[c].toString().trim().toLowerCase() : '';
+    if (rawH) {
+      headerCounts[rawH] = (headerCounts[rawH] || 0) + 1;
+      if (rawH === 'job title' && headerCounts[rawH] > 1) {
+        ui.alert(
+          'Structural Error: Duplicate Column',
+          'Repeated column header "Job Title" detected in Row 1 of "' + PUBLISHING_CONFIG.SHEET_NAME + '".\n\n' +
+          'Publishing is blocked to protect data integrity. Please remove the duplicate "Job Title" column before publishing.',
+          ui.ButtonSet.OK
+        );
+        return;
+      }
+    }
   }
 
-  // Helper to resolve column index by partial match
-  function findCol(keywords) {
-    for (var k = 0; k < keywords.length; k++) {
-      var key = keywords[k].toLowerCase();
-      for (var header in colMap) {
-        if (header === key || header.indexOf(key) !== -1) {
-          return colMap[header];
-        }
+  // Helper to resolve exact column index (case-insensitive strict match)
+  function findExactCol(name) {
+    var target = name.toString().trim().toLowerCase();
+    for (var i = 0; i < headers.length; i++) {
+      if (headers[i] && headers[i].toString().trim().toLowerCase() === target) {
+        return i;
       }
     }
     return -1;
   }
 
-  var colVacancyId = findCol(['vacancy id', 'vacancyid', 'job id', 'id']);
-  var colTitle = findCol(['job title', 'title', 'role']);
-  var colCompany = findCol(['company name', 'firm name', 'company']);
-  var colCategory = findCol(['category']);
-  var colLocation = findCol(['location', 'city']);
-  var colWorkMode = findCol(['work mode', 'mode']);
-  var colEligibility = findCol(['eligibility']);
-  var colStipend = findCol(['stipend / salary', 'stipend', 'salary']);
-  var colDeadline = findCol(['application deadline', 'deadline']);
-  var colAppMethod = findCol(['application method', 'method']);
-  var colAppUrl = findCol(['application url', 'apply link', 'url']);
-  var colContact = findCol(['contact details', 'email', 'recruiter email']);
-  var colSourceUrl = findCol(['original source url', 'source url']);
-  var colDuration = findCol(['duration']);
-  var colJoining = findCol(['joining details', 'joining']);
-  var colRemarks = findCol(['remarks', 'description', 'notes']);
+  // Exact 25 Canonical Research Queue Columns
+  var colVacancyId = findExactCol('Vacancy ID');
+  var colDateFound = findExactCol('Date Found');
+  var colCategory = findExactCol('Category');
+  var colCompany = findExactCol('Company Name');
+  var colTitle = findExactCol('Job Title');
+  var colLocation = findExactCol('Location');
+  var colWorkMode = findExactCol('Work Mode');
+  var colEligibility = findExactCol('Eligibility');
+  var colStipend = findExactCol('Stipend / Salary');
+  var colDuration = findExactCol('Duration');
+  var colJoining = findExactCol('Joining Details');
+  var colDeadline = findExactCol('Application Deadline');
+  var colAppMethod = findExactCol('Application Method');
+  var colAppUrl = findExactCol('Application URL');
+  var colContact = findExactCol('Contact Details');
+  var colSourceUrl = findExactCol('Original Source URL');
+  var colVerification = findExactCol('Verification Status');
+  var colDuplicate = findExactCol('Duplicate Check');
+  var colApproval = findExactCol('Approval Status');
+  var colPublishStatus = findExactCol('Publish Status');
+  var colRemarks = findExactCol('Remarks');
+  var colSourceName = findExactCol('Source Name');
+  var colSourceCheckedDate = findExactCol('Source Checked Date');
+  var colVacancyType = findExactCol('Vacancy Type');
+  var colResearchReportId = findExactCol('Research Report ID');
+  var colDatePublished = findExactCol('Date Published');
 
-  var colVerification = findCol(['verification status', 'verification']);
-  var colDuplicate = findCol(['duplicate check', 'duplicate']);
-  var colApproval = findCol(['approval status', 'approval']);
-  var colPublishStatus = findCol(['publish status', 'published status', 'published']);
-  var colDatePublished = findCol(['date published', 'published date']);
+  // Verify that all essential publishing headers exist
+  var requiredHeaders = [
+    { name: 'Vacancy ID', index: colVacancyId },
+    { name: 'Company Name', index: colCompany },
+    { name: 'Job Title', index: colTitle },
+    { name: 'Category', index: colCategory },
+    { name: 'Verification Status', index: colVerification },
+    { name: 'Duplicate Check', index: colDuplicate },
+    { name: 'Approval Status', index: colApproval },
+    { name: 'Publish Status', index: colPublishStatus }
+  ];
 
-  // Ensure output columns exist (Columns Z, AA, AB) without overwriting existing data
-  var colWebsiteJobId = findCol(['website job id']);
-  var colLiveUrl = findCol(['live website url', 'live url']);
-  var colLastResponse = findCol(['last publish response', 'publish response']);
+  for (var r = 0; r < requiredHeaders.length; r++) {
+    if (requiredHeaders[r].index === -1) {
+      ui.alert(
+        'Column Mapping Error',
+        'Required header "' + requiredHeaders[r].name + '" was not found in Row 1 of "' + PUBLISHING_CONFIG.SHEET_NAME + '".\n\n' +
+        'Publishing is blocked to prevent field misalignment. Please ensure standard column headers are present.',
+        ui.ButtonSet.OK
+      );
+      return;
+    }
+  }
 
-  var maxCol = sheet.getLastColumn();
+  // Ensure output columns exist (Columns Z, AA, AB) without duplicating columns
+  var colWebsiteJobId = findExactCol('Website Job ID');
+  var colLiveUrl = findExactCol('Live Website URL');
+  var colLastResponse = findExactCol('Last Publish Response');
+
+  var lastCol = sheet.getLastColumn();
   if (colWebsiteJobId === -1) {
-    maxCol++;
-    sheet.getRange(1, maxCol).setValue('Website Job ID').setFontWeight('bold');
-    colWebsiteJobId = maxCol - 1;
+    lastCol++;
+    sheet.getRange(1, lastCol).setValue('Website Job ID').setFontWeight('bold');
+    colWebsiteJobId = lastCol - 1;
   }
   if (colLiveUrl === -1) {
-    maxCol++;
-    sheet.getRange(1, maxCol).setValue('Live Website URL').setFontWeight('bold');
-    colLiveUrl = maxCol - 1;
+    lastCol++;
+    sheet.getRange(1, lastCol).setValue('Live Website URL').setFontWeight('bold');
+    colLiveUrl = lastCol - 1;
   }
   if (colLastResponse === -1) {
-    maxCol++;
-    sheet.getRange(1, maxCol).setValue('Last Publish Response').setFontWeight('bold');
-    colLastResponse = maxCol - 1;
+    lastCol++;
+    sheet.getRange(1, lastCol).setValue('Last Publish Response').setFontWeight('bold');
+    colLastResponse = lastCol - 1;
   }
 
   // 3. Scan and collect eligible rows
