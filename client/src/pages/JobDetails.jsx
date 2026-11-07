@@ -116,11 +116,37 @@ export default function JobDetails() {
     job.status !== 'Published' ||
     (job.expiresAt && new Date(job.expiresAt) < new Date());
 
-  // Helper to detect disallowed third-party aggregator links (e.g. CA Way)
+  // Helper to detect disallowed third-party aggregator links (e.g. CA Way, Naukri, Indeed, etc.)
   const isDisallowedAggregatorLink = (url) => {
     if (!url) return false;
     const lower = url.toLowerCase();
-    return lower.includes('caway.in') || lower.includes('caway.');
+    const disallowed = [
+      'caway.in',
+      'caway.',
+      'naukri.com',
+      'indeed.com',
+      'indeed.co.in',
+      'foundit.in',
+      'monsterindia.com',
+      'shine.com',
+      'internshala.com',
+      'freshersworld.com',
+      'timesjobs.com',
+      'instahyre.com',
+      'hirist.com',
+      'hirist.tech',
+      'iimjobs.com',
+      'glassdoor.com',
+      'glassdoor.co.in',
+      'simplyhired.com',
+      'simplyhired.co.in',
+      'jooble.org',
+      'caclubindia.com',
+      'casansaar.com',
+      'taxguru.in',
+      'cadwar.in',
+    ];
+    return disallowed.some((domain) => lower.includes(domain));
   };
 
   const rawLink = (job.applicationLink || '').trim();

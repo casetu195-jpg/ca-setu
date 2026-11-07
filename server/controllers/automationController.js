@@ -15,18 +15,44 @@ function safeTimingCompare(a, b) {
 }
 
 /**
+ * List of known third-party job aggregators, generic listing portals, and competing platforms.
+ * Candidate Apply buttons must never direct applicants to generic job boards or competing aggregators.
+ */
+const DISALLOWED_AGGREGATOR_DOMAINS = [
+  'caway.in',
+  'caway.',
+  'naukri.com',
+  'indeed.com',
+  'indeed.co.in',
+  'foundit.in',
+  'monsterindia.com',
+  'shine.com',
+  'internshala.com',
+  'freshersworld.com',
+  'timesjobs.com',
+  'instahyre.com',
+  'hirist.com',
+  'hirist.tech',
+  'iimjobs.com',
+  'glassdoor.com',
+  'glassdoor.co.in',
+  'simplyhired.com',
+  'simplyhired.co.in',
+  'jooble.org',
+  'caclubindia.com',
+  'casansaar.com',
+  'taxguru.in',
+  'cadwar.in',
+];
+
+/**
  * Detects whether a URL points to a competing vacancy aggregator or generic job board
  * rather than a genuine employer-controlled destination (e.g. official careers portal, Google Form, ATS).
  */
 function isDisallowedAggregatorUrl(url) {
   if (!url || typeof url !== 'string') return false;
   const lower = url.toLowerCase().trim();
-  const disallowedKeywords = [
-    'caway.in',
-    'caway.',
-    'cadwar.in',
-  ];
-  return disallowedKeywords.some((kw) => lower.includes(kw));
+  return DISALLOWED_AGGREGATOR_DOMAINS.some((domain) => lower.includes(domain));
 }
 
 /**

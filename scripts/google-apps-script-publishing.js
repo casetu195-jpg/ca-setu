@@ -154,18 +154,52 @@ function publishApprovedVacancies() {
       var rawSourceUrl = colSourceUrl !== -1 ? row[colSourceUrl].toString().trim() : '';
 
       var lowerAppUrl = rawAppUrl.toLowerCase();
-      var isAggregatorLink = lowerAppUrl.indexOf('caway.in') !== -1 || lowerAppUrl.indexOf('caway.') !== -1;
+      var disallowedDomains = [
+        'caway.in',
+        'caway.',
+        'naukri.com',
+        'indeed.com',
+        'indeed.co.in',
+        'foundit.in',
+        'monsterindia.com',
+        'shine.com',
+        'internshala.com',
+        'freshersworld.com',
+        'timesjobs.com',
+        'instahyre.com',
+        'hirist.com',
+        'hirist.tech',
+        'iimjobs.com',
+        'glassdoor.com',
+        'glassdoor.co.in',
+        'simplyhired.com',
+        'simplyhired.co.in',
+        'jooble.org',
+        'caclubindia.com',
+        'casansaar.com',
+        'taxguru.in',
+        'cadwar.in'
+      ];
+
+      var isAggregatorLink = false;
+      for (var d = 0; d < disallowedDomains.length; d++) {
+        if (lowerAppUrl.indexOf(disallowedDomains[d]) !== -1) {
+          isAggregatorLink = true;
+          break;
+        }
+      }
+
       var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       var hasValidEmail = rawContact && emailRegex.test(rawContact);
 
-      // SAFEGUARD 1: Never use CA Way or generic aggregator listing URLs as Application URL
+      // SAFEGUARD 1: Never use CA Way or generic third-party aggregator listing URLs as Application URL
       if (isAggregatorLink) {
         if (hasValidEmail) {
-          // Fall back cleanly to the genuine employer recruiter email
+          // Fall back cleanly to the genuine employer recruiter email and clear aggregator URL
           rawAppUrl = '';
         } else {
           // Keep unpublished and notify user
-          sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: Application URL is a CA Way link. Please enter genuine employer portal URL or recruiter email.');
+          sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: Application URL is a third-party aggregator / listing link (' + rawAppUrl + '). Please provide the genuine employer career portal or recruiter email.');
           continue;
         }
       }
