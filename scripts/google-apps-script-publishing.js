@@ -333,92 +333,85 @@ function publishApprovedVacancies() {
     return;
   }
 
-  // 2. Exact 25-Column Schema & Pre-Flight Header Validation
-  var headers = data[0];
-  var headerCounts = {};
-  for (var c = 0; c < headers.length; c++) {
-    var rawH = headers[c] ? headers[c].toString().trim().toLowerCase() : '';
-    if (rawH) {
-      headerCounts[rawH] = (headerCounts[rawH] || 0) + 1;
-      if (rawH === 'job title' && headerCounts[rawH] > 1) {
-        ui.alert(
-          'Structural Error: Duplicate Column',
-          'Repeated column header "Job Title" detected in Row 1 of "' + PUBLISHING_CONFIG.SHEET_NAME + '".\n\n' +
-          'Publishing is blocked to protect data integrity. Please remove the duplicate "Job Title" column before publishing.',
-          ui.ButtonSet.OK
-        );
-        return;
-      }
-    }
-  }
-
-  // Helper to resolve exact column index (case-insensitive strict match)
-  function findExactCol(name) {
-    var target = name.toString().trim().toLowerCase();
-    for (var i = 0; i < headers.length; i++) {
-      if (headers[i] && headers[i].toString().trim().toLowerCase() === target) {
-        return i;
-      }
-    }
-    return -1;
-  }
-
-  // Exact 25 Canonical Research Queue Columns
-  var colVacancyId = findExactCol('Vacancy ID');
-  var colDateFound = findExactCol('Date Found');
-  var colCategory = findExactCol('Category');
-  var colCompany = findExactCol('Company Name');
-  var colTitle = findExactCol('Job Title');
-  var colLocation = findExactCol('Location');
-  var colWorkMode = findExactCol('Work Mode');
-  var colEligibility = findExactCol('Eligibility');
-  var colStipend = findExactCol('Stipend / Salary');
-  var colDuration = findExactCol('Duration');
-  var colJoining = findExactCol('Joining Details');
-  var colDeadline = findExactCol('Application Deadline');
-  var colAppMethod = findExactCol('Application Method');
-  var colAppUrl = findExactCol('Application URL');
-  var colContact = findExactCol('Contact Details');
-  var colSourceUrl = findExactCol('Original Source URL');
-  var colVerification = findExactCol('Verification Status');
-  var colDuplicate = findExactCol('Duplicate Check');
-  var colApproval = findExactCol('Approval Status');
-  var colPublishStatus = findExactCol('Publish Status');
-  var colRemarks = findExactCol('Remarks');
-  var colSourceName = findExactCol('Source Name');
-  var colSourceCheckedDate = findExactCol('Source Checked Date');
-  var colVacancyType = findExactCol('Vacancy Type');
-  var colResearchReportId = findExactCol('Research Report ID');
-  var colDatePublished = findExactCol('Date Published');
-
-  // Verify that all essential publishing headers exist
-  var requiredHeaders = [
-    { name: 'Vacancy ID', index: colVacancyId },
-    { name: 'Company Name', index: colCompany },
-    { name: 'Job Title', index: colTitle },
-    { name: 'Category', index: colCategory },
-    { name: 'Verification Status', index: colVerification },
-    { name: 'Duplicate Check', index: colDuplicate },
-    { name: 'Approval Status', index: colApproval },
-    { name: 'Publish Status', index: colPublishStatus }
+  // 2. Strict 25 Canonical Column Order Validation (Columns A:Y)
+  var CANONICAL_RESEARCH_HEADERS = [
+    'Vacancy ID', 'Date Found', 'Category', 'Company Name', 'Job Title', 'Location',
+    'Work Mode', 'Eligibility', 'Stipend / Salary', 'Duration', 'Joining Details',
+    'Application Deadline', 'Application Method', 'Application URL', 'Contact Details',
+    'Original Source URL', 'Verification Status', 'Duplicate Check', 'Approval Status',
+    'Publish Status', 'Remarks', 'Source Name', 'Source Checked Date', 'Vacancy Type', 'Research Report ID'
   ];
 
-  for (var r = 0; r < requiredHeaders.length; r++) {
-    if (requiredHeaders[r].index === -1) {
+  var headers = data[0];
+  if (headers.length < 25) {
+    ui.alert(
+      'Structural Header Error',
+      'Sheet "' + PUBLISHING_CONFIG.SHEET_NAME + '" has fewer than 25 columns (found ' + headers.length + ').\n\n' +
+      'Publishing is blocked. Exactly 25 columns (A through Y) are required.',
+      ui.ButtonSet.OK
+    );
+    return;
+  }
+
+  for (var i = 0; i < 25; i++) {
+    var expectedH = CANONICAL_RESEARCH_HEADERS[i];
+    var actualH = (headers[i] || '').toString().trim();
+    if (actualH.toLowerCase() !== expectedH.toLowerCase()) {
+      var colLetter = String.fromCharCode(65 + i);
       ui.alert(
-        'Column Mapping Error',
-        'Required header "' + requiredHeaders[r].name + '" was not found in Row 1 of "' + PUBLISHING_CONFIG.SHEET_NAME + '".\n\n' +
-        'Publishing is blocked to prevent field misalignment. Please ensure standard column headers are present.',
+        'Structural Header Error',
+        'Column ' + colLetter + ' (Index ' + (i + 1) + ') mismatch in "' + PUBLISHING_CONFIG.SHEET_NAME + '":\n\n' +
+        'Expected: "' + expectedH + '"\n' +
+        'Found: "' + (actualH || '(blank)') + '"\n\n' +
+        'Publishing is blocked to protect data integrity. Please ensure exact header names and column order before publishing.',
         ui.ButtonSet.OK
       );
       return;
     }
   }
 
-  // Ensure output columns exist (Columns Z, AA, AB) without duplicating columns
+  // Canonical column indexes (0-based)
+  var colVacancyId = 0;
+  var colDateFound = 1;
+  var colCategory = 2;
+  var colCompany = 3;
+  var colTitle = 4;
+  var colLocation = 5;
+  var colWorkMode = 6;
+  var colEligibility = 7;
+  var colStipend = 8;
+  var colDuration = 9;
+  var colJoining = 10;
+  var colDeadline = 11;
+  var colAppMethod = 12;
+  var colAppUrl = 13;
+  var colContact = 14;
+  var colSourceUrl = 15;
+  var colVerification = 16;
+  var colDuplicate = 17;
+  var colApproval = 18;
+  var colPublishStatus = 19;
+  var colRemarks = 20;
+  var colSourceName = 21;
+  var colSourceCheckedDate = 22;
+  var colVacancyType = 23;
+  var colResearchReportId = 24;
+
+  // Output columns placed at Z, AA, AB
+  function findExactCol(name) {
+    var target = name.toString().trim().toLowerCase();
+    for (var idx = 0; idx < headers.length; idx++) {
+      if (headers[idx] && headers[idx].toString().trim().toLowerCase() === target) {
+        return idx;
+      }
+    }
+    return -1;
+  }
+
   var colWebsiteJobId = findExactCol('Website Job ID');
   var colLiveUrl = findExactCol('Live Website URL');
   var colLastResponse = findExactCol('Last Publish Response');
+  var colDatePublished = findExactCol('Date Published');
 
   var lastCol = sheet.getLastColumn();
   if (colWebsiteJobId === -1) {
@@ -539,17 +532,19 @@ function publishApprovedVacancies() {
     return;
   }
 
-  // 5. User Confirmation Dialog
+  // 5. User Confirmation Dialog (Explicit count + single-vacancy warning)
   var confirmMsg = 'Found ' + eligibleRows.length + ' approved vacancy/vacancies ready to publish to CA Dwar:\n\n';
   for (var k = 0; k < Math.min(eligibleRows.length, 5); k++) {
-    confirmMsg += '• [' + eligibleRows[k].vacancyId + '] ' + eligibleRows[k].companyName + ' — ' + eligibleRows[k].title + ' (' + eligibleRows[k].category + ')\n';
+    confirmMsg += '• [' + eligibleRows[k].vacancyId + '] ' + eligibleRows[k].companyName + ' — ' + eligibleRows[k].title + ' (' + (eligibleRows[k].category || 'Uncategorized') + ')\n';
   }
   if (eligibleRows.length > 5) {
     confirmMsg += '... and ' + (eligibleRows.length - 5) + ' more.\n';
   }
-  confirmMsg += '\nDo you want to proceed with publishing to https://cadwar.in?';
+  confirmMsg += '\n⚠️ WARNING: This action will publish ALL ' + eligibleRows.length + ' approved vacancy/vacancies to the live website.\n' +
+    'If you intended to test publishing with only ONE vacancy, click NO, set Approval Status to "Pending Approval" on all other rows, and run this again.\n\n' +
+    'Do you want to proceed with publishing ' + eligibleRows.length + ' vacancy/vacancies to https://www.cadwar.in?';
 
-  var response = ui.alert('Confirm Publishing', confirmMsg, ui.ButtonSet.YES_NO);
+  var response = ui.alert('Confirm Publishing (' + eligibleRows.length + ' Vacancies)', confirmMsg, ui.ButtonSet.YES_NO);
   if (response !== ui.Button.YES) {
     return;
   }
@@ -616,7 +611,8 @@ function publishApprovedVacancies() {
         json = { success: false, message: resText };
       }
 
-      if (code === 200 || code === 201) {
+      // Requirement 4: Mark Published ONLY if HTTP response is successful AND json.success === true
+      if ((code === 200 || code === 201) && json && json.success === true) {
         successCount++;
 
         // Update Publish Status = Published
@@ -635,7 +631,7 @@ function publishApprovedVacancies() {
 
       } else {
         failCount++;
-        var errMsg = json.message || ('HTTP ' + code);
+        var errMsg = (json && json.message) || ('HTTP ' + code + (resText ? ': ' + resText : ''));
         errorLog.push(item.vacancyId + ': ' + errMsg);
         sheet.getRange(item.rowIndex, colLastResponse + 1).setValue('Error: ' + errMsg);
         // Do NOT update Publish Status on failure
