@@ -372,7 +372,7 @@ export async function publishJobFromAutomation(req, res, next) {
 
     // 2. Dedicated Diagnostic / Connection Ping Action
     // Confirms API authentication reliably without creating vacancies or relying on HTTP 400 validation failures
-    if (body.action === 'ping' || body.ping === true) {
+    if (req.method === 'GET' || body.action === 'ping' || body.ping === true || (req.query && req.query.action === 'ping')) {
       return res.status(200).json({
         success: true,
         action: 'ping_authenticated',

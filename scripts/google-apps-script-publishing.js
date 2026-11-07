@@ -12,8 +12,8 @@
 
 // Configuration Constants for Vacancy Publishing Integration
 var PUBLISHING_CONFIG = {
-  WEBSITE_URL: 'https://cadwar.in',
-  PUBLISH_ENDPOINT: 'https://cadwar.in/api/automation/publish-job',
+  WEBSITE_URL: 'https://www.cadwar.in',
+  PUBLISH_ENDPOINT: 'https://www.cadwar.in/api/automation/publish-job',
   SHEET_NAME: 'Research Queue',
   SCRIPT_PROPERTY_KEY: 'AUTOMATION_API_KEY'
 };
@@ -564,15 +564,26 @@ function publishApprovedVacancies() {
       method: 'post',
       contentType: 'application/json',
       headers: {
-        'x-api-key': apiKey
+        'x-api-key': apiKey.trim()
       },
       payload: JSON.stringify(payload),
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      followRedirects: false
     };
 
     try {
       var apiRes = UrlFetchApp.fetch(PUBLISHING_CONFIG.PUBLISH_ENDPOINT, options);
       var code = apiRes.getResponseCode();
+
+      // If server returns a redirect (HTTP 301, 302, 307, 308), follow once safely
+      if (code === 301 || code === 302 || code === 307 || code === 308) {
+        var redHeaders = apiRes.getAllHeaders();
+        var redirectLoc = redHeaders['Location'] || redHeaders['location'];
+        if (redirectLoc) {
+          apiRes = UrlFetchApp.fetch(redirectLoc, options);
+          code = apiRes.getResponseCode();
+        }
+      }
       var resText = apiRes.getContentText();
       var json = {};
       try {
@@ -650,14 +661,25 @@ function checkAutomationConnection() {
       method: 'post',
       contentType: 'application/json',
       headers: {
-        'x-api-key': apiKey
+        'x-api-key': apiKey.trim()
       },
       payload: JSON.stringify({ action: 'ping' }),
-      muteHttpExceptions: true
+      muteHttpExceptions: true,
+      followRedirects: false
     };
 
     var res = UrlFetchApp.fetch(PUBLISHING_CONFIG.PUBLISH_ENDPOINT, options);
     var code = res.getResponseCode();
+
+    // If server returns a redirect (HTTP 301, 302, 307, 308), follow once safely
+    if (code === 301 || code === 302 || code === 307 || code === 308) {
+      var redHeaders = res.getAllHeaders();
+      var redirectLoc = redHeaders['Location'] || redHeaders['location'];
+      if (redirectLoc) {
+        res = UrlFetchApp.fetch(redirectLoc, options);
+        code = res.getResponseCode();
+      }
+    }
     var text = res.getContentText();
     var json = {};
     try {
