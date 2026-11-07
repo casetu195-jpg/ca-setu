@@ -15,6 +15,21 @@ function safeTimingCompare(a, b) {
 }
 
 /**
+ * Detects whether a URL points to a competing vacancy aggregator or generic job board
+ * rather than a genuine employer-controlled destination (e.g. official careers portal, Google Form, ATS).
+ */
+function isDisallowedAggregatorUrl(url) {
+  if (!url || typeof url !== 'string') return false;
+  const lower = url.toLowerCase().trim();
+  const disallowedKeywords = [
+    'caway.in',
+    'caway.',
+    'cadwar.in',
+  ];
+  return disallowedKeywords.some((kw) => lower.includes(kw));
+}
+
+/**
  * Parse stipend / salary input string cleanly without fabricating figures
  */
 function parseSalary(rawStipend, rawMin, rawMax, rawPeriod) {
@@ -255,6 +270,24 @@ export async function publishJobFromAutomation(req, res, next) {
     let applicationLink = (body.applicationUrl || body['Application URL'] || body.applicationLink || '').toString().trim();
     let recruiterEmail = (body.contactDetails || body['Contact Details'] || body.recruiterEmail || '').toString().trim();
 
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const isEmailValid = recruiterEmail && emailRegex.test(recruiterEmail);
+
+    // Safeguard: Block third-party aggregator or CA Way links from becoming Application URL
+    if (isDisallowedAggregatorUrl(applicationLink)) {
+      if (isEmailValid) {
+        // Fallback safely to genuine recruiter email destination
+        applicationMethod = 'email';
+        applicationLink = '';
+      } else {
+        // No genuine employer application channel available: reject publication
+        return res.status(400).json({
+          success: false,
+          message: `Vacancy rejected: Application URL cannot be a third-party aggregator or CA Way link ('${applicationLink}'). The Application URL must be a genuine employer-controlled destination (such as the company's official career portal, official application form, or verified recruiter email). If no direct employer destination is available, keep the vacancy unpublished for manual verification.`,
+        });
+      }
+    }
+
     if (applicationLink) {
       if (!applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
         applicationLink = 'https://' + applicationLink;
@@ -268,9 +301,6 @@ export async function publishJobFromAutomation(req, res, next) {
         });
       }
     }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isEmailValid = recruiterEmail && emailRegex.test(recruiterEmail);
 
     if (applicationLink && (applicationMethod === 'external' || !applicationMethod || applicationMethod.includes('link') || applicationMethod.includes('form') || applicationMethod.includes('url'))) {
       applicationMethod = 'external';

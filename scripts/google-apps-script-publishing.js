@@ -149,6 +149,33 @@ function publishApprovedVacancies() {
       dCheck === 'No Duplicate' &&
       pStatus !== 'Published'
     ) {
+      var rawAppUrl = colAppUrl !== -1 ? row[colAppUrl].toString().trim() : '';
+      var rawContact = colContact !== -1 ? row[colContact].toString().trim() : '';
+      var rawSourceUrl = colSourceUrl !== -1 ? row[colSourceUrl].toString().trim() : '';
+
+      var lowerAppUrl = rawAppUrl.toLowerCase();
+      var isAggregatorLink = lowerAppUrl.indexOf('caway.in') !== -1 || lowerAppUrl.indexOf('caway.') !== -1;
+      var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      var hasValidEmail = rawContact && emailRegex.test(rawContact);
+
+      // SAFEGUARD 1: Never use CA Way or generic aggregator listing URLs as Application URL
+      if (isAggregatorLink) {
+        if (hasValidEmail) {
+          // Fall back cleanly to the genuine employer recruiter email
+          rawAppUrl = '';
+        } else {
+          // Keep unpublished and notify user
+          sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: Application URL is a CA Way link. Please enter genuine employer portal URL or recruiter email.');
+          continue;
+        }
+      }
+
+      // SAFEGUARD 2: If neither a direct employer application URL nor recruiter email exists, keep unpublished
+      if (!rawAppUrl && !hasValidEmail) {
+        sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: No genuine employer application URL or recruiter email available.');
+        continue;
+      }
+
       eligibleRows.push({
         rowIndex: i + 1, // 1-based index for sheet
         vacancyId: colVacancyId !== -1 ? row[colVacancyId].toString().trim() : 'VAC-' + (i + 1),
@@ -161,9 +188,9 @@ function publishApprovedVacancies() {
         stipend: colStipend !== -1 ? row[colStipend].toString().trim() : '',
         deadline: colDeadline !== -1 ? row[colDeadline].toString().trim() : '15 days left',
         applicationMethod: colAppMethod !== -1 ? row[colAppMethod].toString().trim() : '',
-        applicationUrl: colAppUrl !== -1 ? row[colAppUrl].toString().trim() : '',
-        contactDetails: colContact !== -1 ? row[colContact].toString().trim() : '',
-        sourceUrl: colSourceUrl !== -1 ? row[colSourceUrl].toString().trim() : '',
+        applicationUrl: rawAppUrl,
+        contactDetails: rawContact,
+        sourceUrl: rawSourceUrl,
         duration: colDuration !== -1 ? row[colDuration].toString().trim() : '',
         joiningDetails: colJoining !== -1 ? row[colJoining].toString().trim() : '',
         remarks: colRemarks !== -1 ? row[colRemarks].toString().trim() : '',

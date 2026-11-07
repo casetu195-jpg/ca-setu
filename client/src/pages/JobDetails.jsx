@@ -116,18 +116,37 @@ export default function JobDetails() {
     job.status !== 'Published' ||
     (job.expiresAt && new Date(job.expiresAt) < new Date());
 
-  // Determine effective application method (with backward-compatibility)
-  const appMethod =
-    job.applicationMethod ||
-    (job.applicationLink && job.applicationLink.trim()
-      ? 'external'
-      : job.recruiterEmail && job.recruiterEmail.trim()
-      ? 'email'
-      : 'internal');
+  // Helper to detect disallowed third-party aggregator links (e.g. CA Way)
+  const isDisallowedAggregatorLink = (url) => {
+    if (!url) return false;
+    const lower = url.toLowerCase();
+    return lower.includes('caway.in') || lower.includes('caway.');
+  };
+
+  const rawLink = (job.applicationLink || '').trim();
+  const hasDisallowedLink = isDisallowedAggregatorLink(rawLink);
+
+  // Determine effective application method (with aggregator protection and fallback)
+  let appMethod = job.applicationMethod;
+  if (!appMethod) {
+    if (rawLink && !hasDisallowedLink) {
+      appMethod = 'external';
+    } else if (job.recruiterEmail && job.recruiterEmail.trim()) {
+      appMethod = 'email';
+    } else {
+      appMethod = 'internal';
+    }
+  } else if (appMethod === 'external' && hasDisallowedLink) {
+    // Strictly block CA Way and aggregator redirection; fallback to email or internal apply
+    if (job.recruiterEmail && job.recruiterEmail.trim()) {
+      appMethod = 'email';
+    } else {
+      appMethod = 'internal';
+    }
+  }
 
   let safeExternalUrl = '';
-  if (appMethod === 'external') {
-    const rawLink = (job.applicationLink || '').trim();
+  if (appMethod === 'external' && !hasDisallowedLink) {
     if (rawLink) {
       safeExternalUrl =
         rawLink.startsWith('http://') || rawLink.startsWith('https://')
