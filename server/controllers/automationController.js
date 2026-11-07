@@ -370,7 +370,17 @@ export async function publishJobFromAutomation(req, res, next) {
 
     const body = req.body || {};
 
-    // 2. Server-Side Approval Safeguards (Strict Enforcement)
+    // 2. Dedicated Diagnostic / Connection Ping Action
+    // Confirms API authentication reliably without creating vacancies or relying on HTTP 400 validation failures
+    if (body.action === 'ping' || body.ping === true) {
+      return res.status(200).json({
+        success: true,
+        action: 'ping_authenticated',
+        message: 'Authentication successful. CA Dwar publishing integration endpoint is active and ready.',
+      });
+    }
+
+    // 3. Server-Side Approval Safeguards (Strict Enforcement)
     const approvalStatus = (body.approvalStatus || body['Approval Status'] || '').trim();
     const verificationStatus = (body.verificationStatus || body['Verification Status'] || '').trim();
     const duplicateCheck = (body.duplicateCheck || body['Duplicate Check'] || '').trim();

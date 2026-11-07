@@ -438,6 +438,7 @@ function publishApprovedVacancies() {
       var rawContact = colContact !== -1 ? row[colContact].toString().trim() : '';
       var rawCompName = colCompany !== -1 ? row[colCompany].toString().trim() : '';
       var rawSourceUrl = colSourceUrl !== -1 ? row[colSourceUrl].toString().trim() : '';
+      var rawAppMethod = colAppMethod !== -1 ? row[colAppMethod].toString().trim() : '';
 
       var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       var hasValidEmail = rawContact && emailRegex.test(rawContact);
@@ -449,6 +450,7 @@ function publishApprovedVacancies() {
           if (hasValidEmail) {
             // Fall back cleanly to the verified employer recruiter email and clear aggregator/unverified URL
             rawAppUrl = '';
+            rawAppMethod = 'email';
           } else {
             // Keep unpublished and notify user in Last Publish Response
             var heldMsg = destEval.status === 'BLOCKED_AGGREGATOR'
@@ -466,6 +468,10 @@ function publishApprovedVacancies() {
         continue;
       }
 
+      if (!rawAppUrl && hasValidEmail) {
+        rawAppMethod = 'email';
+      }
+
       eligibleRows.push({
         rowIndex: i + 1, // 1-based index for sheet
         vacancyId: colVacancyId !== -1 ? row[colVacancyId].toString().trim() : 'VAC-' + (i + 1),
@@ -477,7 +483,7 @@ function publishApprovedVacancies() {
         eligibility: colEligibility !== -1 ? row[colEligibility].toString().trim() : '',
         stipend: colStipend !== -1 ? row[colStipend].toString().trim() : '',
         deadline: colDeadline !== -1 ? row[colDeadline].toString().trim() : '15 days left',
-        applicationMethod: colAppMethod !== -1 ? row[colAppMethod].toString().trim() : '',
+        applicationMethod: rawAppMethod,
         applicationUrl: rawAppUrl,
         contactDetails: rawContact,
         sourceUrl: rawSourceUrl,
@@ -638,29 +644,51 @@ function checkAutomationConnection() {
   }
 
   try {
-    // Send a validation ping (intentionally empty payload to test API key authentication)
+    // Send a dedicated diagnostic ping to test API key authentication reliably
     var options = {
       method: 'post',
       contentType: 'application/json',
       headers: {
         'x-api-key': apiKey
       },
-      payload: JSON.stringify({}),
+      payload: JSON.stringify({ action: 'ping' }),
       muteHttpExceptions: true
     };
 
     var res = UrlFetchApp.fetch(CONFIG.PUBLISH_ENDPOINT, options);
     var code = res.getResponseCode();
     var text = res.getContentText();
+    var json = {};
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      json = {};
+    }
 
-    if (code === 401) {
-      ui.alert('Connection Failed', 'Authentication Rejected (HTTP 401): The API Key in Script Properties does not match the server key.', ui.ButtonSet.OK);
+    if (code === 200 && json.success === true) {
+      ui.alert(
+        'Connection Successful!',
+        '✓ Connected to CA Dwar API.\n✓ API Key authentication verified successfully.\n\nYour Google Sheet is ready to publish approved vacancies.',
+        ui.ButtonSet.OK
+      );
+    } else if (code === 401) {
+      ui.alert(
+        'Connection Failed',
+        'Authentication Rejected (HTTP 401): The API Key in Script Properties does not match the server key.\n\nPlease verify AUTOMATION_API_KEY in Project Settings → Script Properties.',
+        ui.ButtonSet.OK
+      );
     } else if (code === 500 && text.indexOf('AUTOMATION_API_KEY environment variable is missing') !== -1) {
-      ui.alert('Server Setup Required', 'AUTOMATION_API_KEY is missing in Vercel environment variables. Please add it to your Vercel project settings.', ui.ButtonSet.OK);
-    } else if (code === 400) {
-      ui.alert('Connection Successful!', '✓ Connected to CA Dwar API.\n✓ API Key authentication passed successfully.\n\nYour Google Sheet is ready to publish approved vacancies.', ui.ButtonSet.OK);
+      ui.alert(
+        'Server Setup Required',
+        'AUTOMATION_API_KEY is missing in Vercel environment variables.\n\nPlease add AUTOMATION_API_KEY to your Vercel project settings.',
+        ui.ButtonSet.OK
+      );
     } else {
-      ui.alert('Connection Status', 'Server responded with HTTP ' + code + ':\n' + text, ui.ButtonSet.OK);
+      ui.alert(
+        'Connection Status',
+        'Server responded with HTTP ' + code + ':\n' + (json.message || text),
+        ui.ButtonSet.OK
+      );
     }
   } catch (err) {
     ui.alert('Connection Error', 'Could not reach ' + CONFIG.PUBLISH_ENDPOINT + ':\n' + err.message, ui.ButtonSet.OK);
