@@ -470,9 +470,9 @@ function testImportDummyRecord() {
 
   if (mismatchList.length === 0) {
     ui.alert(
-      'Test Passed: 25-Column Mapping Confirmed',
+      'Test Passed: Column Mapping Verified',
       '✓ Successfully tested in separate sheet "' + testSheetName + '" (Live Research Queue untouched).\n\n' +
-      '• Batch Vacancy ID Generation: 3/3 unique sequential IDs generated (' + id1 + ', ' + id2 + ', ' + id3 + ').\n' +
+      '• Sequential IDs Generated: ' + id1 + ', ' + id2 + ', ' + id3 + ' (Started from VAC-001 in cleared Test Queue).\n' +
       '• No Fallback to Job Title: Verified across Sukhbir and Associates, Nitin Pandey & Co., and ANS & Associates.\n' +
       '• Columns F through O: Contain genuine data or remain blank (never repeated Job Title).\n' +
       '• Verification Status: Set to "Pending Verification", remarks flagged with missing fields.\n' +
