@@ -214,4 +214,90 @@ assert.strictEqual(processedAsian[18], 'On Hold', 'Asian Paints Approval Status 
 assert.strictEqual(processedAsian[19], 'Unpublished', 'Publish Status must be Unpublished');
 console.log('✓ Asian Paints strictly placed On Hold and Unpublished.');
 
+console.log('\n=== TEST 5: Real Firm Verification (Sukhbir and Associates, Nitin Pandey & Co., ANS & Associates) ===');
+const testFirms = [
+  {
+    companyName: 'Sukhbir and Associates',
+    jobTitle: 'Articleship Trainee'
+    // Intentionally missing: Vacancy ID, Location through Contact Details
+  },
+  {
+    companyName: 'Nitin Pandey & Co.',
+    jobTitle: 'CA Industrial Trainee',
+    location: 'Delhi'
+    // Intentionally missing: Vacancy ID, Work Mode through Contact Details
+  },
+  {
+    companyName: 'ANS & Associates',
+    jobTitle: 'Tax Associate',
+    contactDetails: 'careers@ansassociates.com'
+    // Intentionally missing: Vacancy ID, Location through Application URL
+  }
+];
+
+const processedFirms = processImportBatch(testFirms, existingRows);
+assert.strictEqual(processedFirms.length, 3, 'Must process 3 firms');
+
+// Validate Sukhbir and Associates
+const sukhbir = processedFirms[0];
+assert.strictEqual(sukhbir[0], 'VAC-086', 'Col A: Must generate sequential Vacancy ID VAC-086');
+assert.strictEqual(sukhbir[3], 'Sukhbir and Associates', 'Col D: Company Name');
+assert.strictEqual(sukhbir[4], 'Articleship Trainee', 'Col E: Job Title');
+// Verify Columns F through O do NOT contain Job Title
+for (let c = 5; c <= 14; c++) {
+  assert.notStrictEqual(sukhbir[c], 'Articleship Trainee', `Col ${CANONICAL_25_HEADERS[c]} must NOT contain repeated Job Title`);
+  assert.strictEqual(sukhbir[c], '', `Col ${CANONICAL_25_HEADERS[c]} must be empty string when unavailable`);
+}
+assert(sukhbir[20].includes('[VERIFICATION NEEDED]'), 'Remarks must flag missing fields');
+
+// Validate Nitin Pandey & Co.
+const nitin = processedFirms[1];
+assert.strictEqual(nitin[0], 'VAC-087', 'Col A: Must generate sequential Vacancy ID VAC-087');
+assert.strictEqual(nitin[3], 'Nitin Pandey & Co.', 'Col D: Company Name');
+assert.strictEqual(nitin[4], 'CA Industrial Trainee', 'Col E: Job Title');
+assert.strictEqual(nitin[5], 'Delhi', 'Col F: Location correctly mapped to Delhi');
+for (let c = 6; c <= 14; c++) {
+  assert.notStrictEqual(nitin[c], 'CA Industrial Trainee', `Col ${CANONICAL_25_HEADERS[c]} must NOT contain repeated Job Title`);
+  assert.strictEqual(nitin[c], '', `Col ${CANONICAL_25_HEADERS[c]} must be empty string when unavailable`);
+}
+
+// Validate ANS & Associates
+const ans = processedFirms[2];
+assert.strictEqual(ans[0], 'VAC-088', 'Col A: Must generate sequential Vacancy ID VAC-088');
+assert.strictEqual(ans[3], 'ANS & Associates', 'Col D: Company Name');
+assert.strictEqual(ans[4], 'Tax Associate', 'Col E: Job Title');
+assert.strictEqual(ans[14], 'careers@ansassociates.com', 'Col O: Contact Details');
+for (let c = 5; c <= 13; c++) {
+  assert.notStrictEqual(ans[c], 'Tax Associate', `Col ${CANONICAL_25_HEADERS[c]} must NOT contain repeated Job Title`);
+  assert.strictEqual(ans[c], '', `Col ${CANONICAL_25_HEADERS[c]} must be empty string when unavailable`);
+}
+
+console.log('✓ Verified: Vacancy IDs generated (VAC-086, VAC-087, VAC-088).');
+console.log('✓ Verified: Job Title is NEVER used as fallback for Location through Contact Details.');
+console.log('✓ Verified: Missing information left blank and flagged in Remarks.');
+
+console.log('\n--- 25-COLUMN VERIFICATION MATRIX ---');
+console.log(
+  'Col'.padEnd(5) +
+  'Header Name'.padEnd(24) +
+  'Sukhbir & Associates'.padEnd(28) +
+  'Nitin Pandey & Co.'.padEnd(26) +
+  'ANS & Associates'
+);
+console.log('-'.repeat(105));
+for (let i = 0; i < 25; i++) {
+  const colLetter = String.fromCharCode(65 + i);
+  const header = CANONICAL_25_HEADERS[i];
+  const val1 = sukhbir[i] === '' ? '(blank)' : (sukhbir[i].length > 25 ? sukhbir[i].substring(0, 22) + '...' : sukhbir[i]);
+  const val2 = nitin[i] === '' ? '(blank)' : (nitin[i].length > 23 ? nitin[i].substring(0, 20) + '...' : nitin[i]);
+  const val3 = ans[i] === '' ? '(blank)' : (ans[i].length > 25 ? ans[i].substring(0, 22) + '...' : ans[i]);
+  console.log(
+    colLetter.padEnd(5) +
+    header.padEnd(24) +
+    val1.padEnd(28) +
+    val2.padEnd(26) +
+    val3
+  );
+}
+
 console.log('\n=== ALL TESTS PASSED SUCCESSFULLY! ===');

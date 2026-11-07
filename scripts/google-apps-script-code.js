@@ -223,14 +223,35 @@ function importVacanciesIntoQueue(vacancyList, targetSheetName) {
       }
     }
 
-    // 3. Remove invented defaults: leave blank if missing and flag in remarks
+    // 3. Extract each field individually (strict normalization, NEVER fall back to Job Title)
     var category = (item.category || '').toString().trim();
-    var location = (item.location || '').toString().trim();
-    var workMode = (item.workMode || '').toString().trim();
+    var location = (item.location || item.city || '').toString().trim();
+    var workMode = (item.workMode || item.mode || '').toString().trim();
+    var eligibility = (item.eligibility || item.qualification || '').toString().trim();
+    var stipend = (item.stipend || item.salary || '').toString().trim();
+    var duration = (item.duration || '').toString().trim();
+    var joiningDetails = (item.joiningDetails || item.joining || '').toString().trim();
     var deadline = (item.deadline || item.applicationDeadline || '').toString().trim();
-    var sourceName = (item.sourceName || '').toString().trim();
-    var vacancyType = (item.vacancyType || '').toString().trim();
+    var appUrl = (item.applicationUrl || item.applyUrl || item.applicationLink || item.link || '').toString().trim();
+    var contactDetails = (item.contactDetails || item.contact || item.email || item.phone || '').toString().trim();
+    var sourceUrl = (item.sourceUrl || item.originalSourceUrl || item.sourceLink || '').toString().trim();
+    var sourceName = (item.sourceName || item.source || '').toString().trim();
+    var vacancyType = (item.vacancyType || item.type || '').toString().trim();
+    var researchReportId = (item.researchReportId || item.reportId || '').toString().trim();
 
+    // Application Method determination (blank if no destination provided)
+    var appMethod = (item.applicationMethod || item.method || '').toString().trim();
+    if (!appMethod) {
+      if (contactDetails && contactDetails.indexOf('@') !== -1) {
+        appMethod = 'email';
+      } else if (appUrl) {
+        appMethod = 'link';
+      } else {
+        appMethod = '';
+      }
+    }
+
+    // Flag missing essential fields for manual verification
     var missingFields = [];
     if (!category) missingFields.push('Category');
     if (!location) missingFields.push('Location');
@@ -238,39 +259,41 @@ function importVacanciesIntoQueue(vacancyList, targetSheetName) {
     if (!deadline) missingFields.push('Application Deadline');
     if (!sourceName) missingFields.push('Source Name');
     if (!vacancyType) missingFields.push('Vacancy Type');
+    if (!contactDetails && !appUrl) missingFields.push('Application Destination (URL/Email)');
 
     if (missingFields.length > 0) {
       var missingNote = '[VERIFICATION NEEDED] Missing fields: ' + missingFields.join(', ');
       remarks = remarks ? remarks + '; ' + missingNote : missingNote;
     }
 
-    // 4. Strict 25-Column Row Array Construction
+    // 4. Strict 25-Column Canonical Row Construction (Columns A through Y)
+    // Every field is mapped strictly to its own column. Job Title is NEVER used as fallback.
     var row = new Array(25);
-    row[0] = vacId;                                                                          // Col A: Vacancy ID
+    row[0] = vacId;                                                                          // Col A: Vacancy ID (Always unique VAC-xxx)
     row[1] = item.dateFound ? formatDateYMD(item.dateFound) : todayStr;                     // Col B: Date Found
-    row[2] = category;                                                                       // Col C: Category (No invented default)
+    row[2] = category;                                                                       // Col C: Category (Blank if missing)
     row[3] = company;                                                                        // Col D: Company Name
     row[4] = title;                                                                          // Col E: Job Title
-    row[5] = location;                                                                       // Col F: Location (No invented default)
-    row[6] = workMode;                                                                       // Col G: Work Mode (No invented default)
-    row[7] = (item.eligibility || '').toString().trim();                                     // Col H: Eligibility
-    row[8] = (item.stipend || '').toString().trim();                                         // Col I: Stipend / Salary
-    row[9] = (item.duration || '').toString().trim();                                        // Col J: Duration
-    row[10] = (item.joiningDetails || '').toString().trim();                                 // Col K: Joining Details
-    row[11] = deadline;                                                                      // Col L: Application Deadline (No invented default)
-    row[12] = (item.applicationMethod || (item.contactDetails ? 'email' : 'link')).toString().trim(); // Col M: Application Method
-    row[13] = (item.applicationUrl || '').toString().trim();                                 // Col N: Application URL
-    row[14] = (item.contactDetails || '').toString().trim();                                 // Col O: Contact Details
-    row[15] = (item.sourceUrl || item.originalSourceUrl || '').toString().trim();           // Col P: Original Source URL
+    row[5] = location;                                                                       // Col F: Location (Blank if missing, NEVER title)
+    row[6] = workMode;                                                                       // Col G: Work Mode (Blank if missing, NEVER title)
+    row[7] = eligibility;                                                                    // Col H: Eligibility (Blank if missing, NEVER title)
+    row[8] = stipend;                                                                        // Col I: Stipend / Salary (Blank if missing, NEVER title)
+    row[9] = duration;                                                                       // Col J: Duration (Blank if missing, NEVER title)
+    row[10] = joiningDetails;                                                                // Col K: Joining Details (Blank if missing, NEVER title)
+    row[11] = deadline;                                                                      // Col L: Application Deadline (Blank if missing, NEVER title)
+    row[12] = appMethod;                                                                     // Col M: Application Method (Blank if missing, NEVER title)
+    row[13] = appUrl;                                                                        // Col N: Application URL (Blank if missing, NEVER title)
+    row[14] = contactDetails;                                                                // Col O: Contact Details (Blank if missing, NEVER title)
+    row[15] = sourceUrl;                                                                     // Col P: Original Source URL
     row[16] = verificationStatus;                                                            // Col Q: Verification Status (NEVER 'Verified')
     row[17] = duplicateCheckStatus;                                                          // Col R: Duplicate Check (NEVER 'No Duplicate')
     row[18] = approvalStatus;                                                                // Col S: Approval Status (NEVER 'Approved')
     row[19] = publishStatus;                                                                 // Col T: Publish Status (NEVER 'Published')
-    row[20] = remarks;                                                                       // Col U: Remarks
-    row[21] = sourceName;                                                                    // Col V: Source Name (No invented default)
+    row[20] = remarks;                                                                       // Col U: Remarks (Flags verification requirements)
+    row[21] = sourceName;                                                                    // Col V: Source Name (Blank if missing)
     row[22] = item.sourceCheckedDate ? formatDateYMD(item.sourceCheckedDate) : todayStr;     // Col W: Source Checked Date
-    row[23] = vacancyType;                                                                   // Col X: Vacancy Type (No invented default)
-    row[24] = (item.researchReportId || '').toString().trim();                               // Col Y: Research Report ID
+    row[23] = vacancyType;                                                                   // Col X: Vacancy Type (Blank if missing)
+    row[24] = researchReportId;                                                              // Col Y: Research Report ID
 
     rowsToAppend.push(row);
   }
@@ -354,47 +377,27 @@ function testImportDummyRecord() {
   testSheet.getRange(1, 1, 1, 25).setValues([CANONICAL_RESEARCH_HEADERS]);
   testSheet.getRange(1, 1, 1, 25).setFontWeight('bold').setBackground('#f3f3f3');
 
-  // 3. Construct 3 Test Vacancies WITHOUT supplied IDs in a single batch
+  // 3. Construct Test Vacancies for the 3 Real Firms WITHOUT supplied IDs in a single batch
   var batchTestVacancies = [
-    // Item 1: Complete fields (no ID supplied)
+    // Item 1: Sukhbir and Associates (Intentionally missing: Vacancy ID, Location through Contact Details)
     {
       dateFound: new Date(),
-      category: 'Industrial Training',
-      companyName: 'Dummy Test Firm & Co',
-      jobTitle: 'Finance & Accounts Trainee',
-      location: 'Mumbai, Maharashtra',
-      workMode: 'Hybrid',
-      eligibility: 'CA Inter Both Groups Cleared',
-      stipend: '₹25,000 / month',
-      duration: '12 Months',
-      joiningDetails: 'Immediate',
-      deadline: '15 Days Left',
-      applicationMethod: 'email',
-      applicationUrl: '',
-      contactDetails: 'careers@dummytestfirm.com',
-      sourceUrl: 'https://dummytestfirm.com/careers/trainee-2026',
-      remarks: 'Test batch record 1 for column mapping verification',
-      sourceName: 'Company Career Page',
-      sourceCheckedDate: new Date(),
-      vacancyType: 'Full-Time Trainee',
-      researchReportId: 'REP-TEST-001'
+      companyName: 'Sukhbir and Associates',
+      jobTitle: 'Articleship Trainee'
     },
-    // Item 2: Minimal fields with missing values (no ID, no defaults supplied)
+    // Item 2: Nitin Pandey & Co. (Intentionally missing: Vacancy ID, Work Mode through Contact Details)
     {
       dateFound: new Date(),
-      companyName: 'Minimalist CA Firm & Associates',
-      jobTitle: 'Audit Associate',
-      contactDetails: 'hr@minimalistca.com',
-      sourceUrl: 'https://minimalistca.com/jobs/audit',
-      remarks: 'Minimal record to verify removal of invented defaults'
+      companyName: 'Nitin Pandey & Co.',
+      jobTitle: 'CA Industrial Trainee',
+      location: 'Delhi'
     },
-    // Item 3: Asian Paints inactive safeguard test (no ID supplied)
+    // Item 3: ANS & Associates (Intentionally missing: Vacancy ID, Location through Application URL)
     {
       dateFound: new Date(),
-      companyName: 'Asian Paints',
-      jobTitle: 'Finance & Accounts Intern',
-      contactDetails: 'campus@asianpaints.com',
-      sourceUrl: 'https://asianpaints.com/careers'
+      companyName: 'ANS & Associates',
+      jobTitle: 'Tax Associate',
+      contactDetails: 'careers@ansassociates.com'
     }
   ];
 
@@ -403,9 +406,9 @@ function testImportDummyRecord() {
 
   // 5. Read back Rows 2, 3, 4 from Test Queue
   var rows = testSheet.getRange(2, 1, 3, 25).getValues();
-  var row1 = rows[0];
-  var row2 = rows[1];
-  var row3 = rows[2];
+  var row1 = rows[0]; // Sukhbir and Associates
+  var row2 = rows[1]; // Nitin Pandey & Co.
+  var row3 = rows[2]; // ANS & Associates
   var mismatchList = [];
 
   // Check 1: Unique sequential Vacancy IDs generated for all 3
@@ -420,41 +423,59 @@ function testImportDummyRecord() {
     mismatchList.push('Duplicate Vacancy IDs generated within the same batch: ' + id1 + ', ' + id2 + ', ' + id3);
   }
 
-  // Check 2: Row 1 full 25-column mapping
-  if (row1[3] !== 'Dummy Test Firm & Co') mismatchList.push('Row 1 Col D (Company Name): expected "Dummy Test Firm & Co", got "' + row1[3] + '"');
-  if (row1[4] !== 'Finance & Accounts Trainee') mismatchList.push('Row 1 Col E (Job Title): expected "Finance & Accounts Trainee", got "' + row1[4] + '"');
-  if (row1[5] !== 'Mumbai, Maharashtra') mismatchList.push('Row 1 Col F (Location): expected "Mumbai, Maharashtra", got "' + row1[5] + '"');
-  if (row1[6] !== 'Hybrid') mismatchList.push('Row 1 Col G (Work Mode): expected "Hybrid", got "' + row1[6] + '"');
-  if (row1[16] !== 'Pending Verification') mismatchList.push('Row 1 Col Q (Verification Status): expected "Pending Verification", got "' + row1[16] + '"');
-  if (row1[18] !== 'Pending Approval') mismatchList.push('Row 1 Col S (Approval Status): expected "Pending Approval", got "' + row1[18] + '"');
-  if (row1[19] !== 'Unpublished') mismatchList.push('Row 1 Col T (Publish Status): expected "Unpublished", got "' + row1[19] + '"');
-
-  // Check 3: Row 2 removal of invented defaults (blank fields remain blank and flagged)
-  if (row2[2] !== '') mismatchList.push('Row 2 Col C (Category): must be blank when not supplied, got "' + row2[2] + '"');
-  if (row2[5] !== '') mismatchList.push('Row 2 Col F (Location): must be blank when not supplied, got "' + row2[5] + '"');
-  if (row2[6] !== '') mismatchList.push('Row 2 Col G (Work Mode): must be blank when not supplied, got "' + row2[6] + '"');
-  if (row2[11] !== '') mismatchList.push('Row 2 Col L (Application Deadline): must be blank when not supplied, got "' + row2[11] + '"');
-  if (row2[21] !== '') mismatchList.push('Row 2 Col V (Source Name): must be blank when not supplied, got "' + row2[21] + '"');
-  if (row2[23] !== '') mismatchList.push('Row 2 Col X (Vacancy Type): must be blank when not supplied, got "' + row2[23] + '"');
-  if ((row2[20] || '').indexOf('[VERIFICATION NEEDED]') === -1) {
-    mismatchList.push('Row 2 Col U (Remarks): expected [VERIFICATION NEEDED] missing fields flag, got "' + row2[20] + '"');
+  // Check 2: Sukhbir and Associates mapping & strictly NO Job Title fallback in Columns F through O
+  if (row1[3] !== 'Sukhbir and Associates') mismatchList.push('Row 1 Col D (Company Name): expected "Sukhbir and Associates", got "' + row1[3] + '"');
+  if (row1[4] !== 'Articleship Trainee') mismatchList.push('Row 1 Col E (Job Title): expected "Articleship Trainee", got "' + row1[4] + '"');
+  for (var c1 = 5; c1 <= 14; c1++) {
+    var colName1 = CANONICAL_RESEARCH_HEADERS[c1];
+    if (row1[c1] === 'Articleship Trainee') {
+      mismatchList.push('Row 1 Col ' + colName1 + ': incorrectly contains repeated Job Title "Articleship Trainee"');
+    }
+    if (row1[c1] !== '') {
+      mismatchList.push('Row 1 Col ' + colName1 + ': must be blank when unavailable, got "' + row1[c1] + '"');
+    }
+  }
+  if ((row1[20] || '').indexOf('[VERIFICATION NEEDED]') === -1) {
+    mismatchList.push('Row 1 Col U (Remarks): expected [VERIFICATION NEEDED] missing fields flag, got "' + row1[20] + '"');
   }
 
-  // Check 4: Row 3 Asian Paints safeguard (On Hold, Unpublished)
-  if (row3[18] !== 'On Hold') mismatchList.push('Row 3 Col S (Approval Status): Asian Paints must be "On Hold", got "' + row3[18] + '"');
-  if (row3[19] !== 'Unpublished') mismatchList.push('Row 3 Col T (Publish Status): Asian Paints must be "Unpublished", got "' + row3[19] + '"');
-  if ((row3[17] || '').indexOf('Previously Inactive') === -1) {
-    mismatchList.push('Row 3 Col R (Duplicate Check): Asian Paints must note Previously Inactive, got "' + row3[17] + '"');
+  // Check 3: Nitin Pandey & Co. mapping & strictly NO Job Title fallback in Columns G through O
+  if (row2[3] !== 'Nitin Pandey & Co.') mismatchList.push('Row 2 Col D (Company Name): expected "Nitin Pandey & Co.", got "' + row2[3] + '"');
+  if (row2[4] !== 'CA Industrial Trainee') mismatchList.push('Row 2 Col E (Job Title): expected "CA Industrial Trainee", got "' + row2[4] + '"');
+  if (row2[5] !== 'Delhi') mismatchList.push('Row 2 Col F (Location): expected "Delhi", got "' + row2[5] + '"');
+  for (var c2 = 6; c2 <= 14; c2++) {
+    var colName2 = CANONICAL_RESEARCH_HEADERS[c2];
+    if (row2[c2] === 'CA Industrial Trainee') {
+      mismatchList.push('Row 2 Col ' + colName2 + ': incorrectly contains repeated Job Title "CA Industrial Trainee"');
+    }
+    if (row2[c2] !== '') {
+      mismatchList.push('Row 2 Col ' + colName2 + ': must be blank when unavailable, got "' + row2[c2] + '"');
+    }
+  }
+
+  // Check 4: ANS & Associates mapping & strictly NO Job Title fallback in Columns F through N
+  if (row3[3] !== 'ANS & Associates') mismatchList.push('Row 3 Col D (Company Name): expected "ANS & Associates", got "' + row3[3] + '"');
+  if (row3[4] !== 'Tax Associate') mismatchList.push('Row 3 Col E (Job Title): expected "Tax Associate", got "' + row3[4] + '"');
+  if (row3[12] !== 'email') mismatchList.push('Row 3 Col M (Application Method): expected "email", got "' + row3[12] + '"');
+  if (row3[14] !== 'careers@ansassociates.com') mismatchList.push('Row 3 Col O (Contact Details): expected "careers@ansassociates.com", got "' + row3[14] + '"');
+  for (var c3 = 5; c3 <= 11; c3++) {
+    var colName3 = CANONICAL_RESEARCH_HEADERS[c3];
+    if (row3[c3] === 'Tax Associate') {
+      mismatchList.push('Row 3 Col ' + colName3 + ': incorrectly contains repeated Job Title "Tax Associate"');
+    }
+    if (row3[c3] !== '') {
+      mismatchList.push('Row 3 Col ' + colName3 + ': must be blank when unavailable, got "' + row3[c3] + '"');
+    }
   }
 
   if (mismatchList.length === 0) {
     ui.alert(
-      'Test Passed: All Safeguards Confirmed',
+      'Test Passed: 25-Column Mapping Confirmed',
       '✓ Successfully tested in separate sheet "' + testSheetName + '" (Live Research Queue untouched).\n\n' +
       '• Batch Vacancy ID Generation: 3/3 unique sequential IDs generated (' + id1 + ', ' + id2 + ', ' + id3 + ').\n' +
-      '• Exact 25 Canonical Columns: Verified 1-to-1 correspondence with headers A through Y.\n' +
-      '• Invented Defaults Eliminated: Missing Category, Location, Work Mode, Deadline, Source Name, and Vacancy Type left blank and flagged in Remarks.\n' +
-      '• Asian Paints Safeguard: Marked "On Hold" and "Unpublished" with inactive hold note.\n' +
+      '• No Fallback to Job Title: Verified across Sukhbir and Associates, Nitin Pandey & Co., and ANS & Associates.\n' +
+      '• Columns F through O: Contain genuine data or remain blank (never repeated Job Title).\n' +
+      '• Verification Status: Set to "Pending Verification", remarks flagged with missing fields.\n' +
       '• Zero Live Data Modified: Live Research Queue and live database remain 100% untouched.',
       ui.ButtonSet.OK
     );
