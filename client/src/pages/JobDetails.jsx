@@ -32,6 +32,192 @@ import {
   ArrowRight,
 } from 'lucide-react';
 
+const BLOCKED_AGGREGATOR_DOMAINS = [
+  'caway.in',
+  'naukri.com',
+  'indeed.com',
+  'indeed.co.in',
+  'foundit.in',
+  'monsterindia.com',
+  'shine.com',
+  'internshala.com',
+  'freshersworld.com',
+  'timesjobs.com',
+  'instahyre.com',
+  'hirist.com',
+  'hirist.tech',
+  'iimjobs.com',
+  'glassdoor.com',
+  'glassdoor.co.in',
+  'simplyhired.com',
+  'simplyhired.co.in',
+  'jooble.org',
+  'caclubindia.com',
+  'casansaar.com',
+  'taxguru.in',
+  'cadwar.in',
+  'unstop.com',
+  'cutshort.io',
+  'apna.co',
+  'linkedin.com',
+];
+
+const BLOCKED_SHORTENER_DOMAINS = [
+  'bit.ly',
+  'tinyurl.com',
+  't.co',
+  'cutt.ly',
+  'rb.gy',
+  'shorturl.at',
+  'is.gd',
+  'ow.ly',
+  'rebrand.ly',
+  'buff.ly',
+];
+
+const VERIFIED_FORM_DOMAINS = [
+  'forms.gle',
+  'forms.office.com',
+  'forms.microsoft.com',
+  'typeform.com',
+  'forms.zohopublic.com',
+  'forms.zoho.com',
+  'forms.zohopublic.in',
+  'forms.zoho.in',
+];
+
+const VERIFIED_ATS_DOMAINS = [
+  'myworkdayjobs.com',
+  'workday.com',
+  'greenhouse.io',
+  'lever.co',
+  'smartrecruiters.com',
+  'darwinbox.in',
+  'darwinbox.com',
+  'keka.com',
+  'talentlyft.com',
+  'recruitee.com',
+  'bamboohr.com',
+  'jobvite.com',
+  'taleo.net',
+  'successfactors.com',
+  'successfactors.eu',
+  'oraclecloud.com',
+  'sap.com',
+  'ashbyhq.com',
+  'rippling.com',
+  'freshteam.com',
+  'workable.com',
+  'icims.com',
+  'zohorecruit.com',
+  'zohorecruit.in',
+];
+
+function parseUrlDetails(urlStr) {
+  if (!urlStr || typeof urlStr !== 'string') return null;
+  let trimmed = urlStr.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = 'https://' + trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return {
+      hostname: parsed.hostname.toLowerCase(),
+      pathname: parsed.pathname || '/',
+      fullUrl: parsed.href,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isHostMatchingDomain(hostname, targetDomain) {
+  if (!hostname || !targetDomain) return false;
+  const h = hostname.toLowerCase();
+  const t = targetDomain.toLowerCase();
+  return h === t || h.endsWith('.' + t);
+}
+
+function isBlockedAggregator(hostname) {
+  if (!hostname) return false;
+  return BLOCKED_AGGREGATOR_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
+}
+
+function isBlockedShortener(hostname) {
+  if (!hostname) return false;
+  return BLOCKED_SHORTENER_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
+}
+
+function isVerifiedApplicationPlatform(hostname, pathname) {
+  if (!hostname) return false;
+  if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
+  if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').startsWith('/forms')) return true;
+  if (VERIFIED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (VERIFIED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  return false;
+}
+
+function doesHostMatchCompany(hostname, companyName) {
+  if (!hostname || !companyName) return false;
+  const cleanComp = companyName
+    .toLowerCase()
+    .replace(/\b(private|pvt|limited|ltd|llp|chartered|accountants|firm|and|co|company|corp|corporation|inc|india)\b/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim();
+
+  const concatComp = cleanComp.replace(/\s+/g, '');
+  if (concatComp.length >= 3 && hostname.includes(concatComp)) {
+    return true;
+  }
+
+  const tokens = cleanComp.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of tokens) {
+    if (hostname.includes(token)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasCareerSignals(hostname, pathname) {
+  if (!hostname) return false;
+  const hostParts = hostname.split('.');
+  const subdomain = hostParts[0];
+  const careerSubdomains = ['careers', 'career', 'jobs', 'job', 'talent', 'recruit', 'recruitment'];
+  if (careerSubdomains.includes(subdomain)) {
+    return true;
+  }
+
+  const p = (pathname || '').toLowerCase();
+  const careerPaths = ['/careers', '/career', '/jobs', '/job/', '/openings', '/open-roles', '/vacancies', '/apply'];
+  return careerPaths.some((cp) => p.includes(cp));
+}
+
+function evaluateApplicationDestination(urlStr, companyName = '') {
+  const parsed = parseUrlDetails(urlStr);
+  if (!parsed) {
+    return { isAllowed: false, isVerified: false, reason: 'Invalid URL' };
+  }
+
+  const { hostname, pathname } = parsed;
+
+  if (isBlockedAggregator(hostname) || isBlockedShortener(hostname)) {
+    return { isAllowed: false, isVerified: false, hostname, reason: 'Blocked aggregator or shortener' };
+  }
+
+  if (isVerifiedApplicationPlatform(hostname, pathname)) {
+    return { isAllowed: true, isVerified: true, hostname, reason: 'Verified platform or form' };
+  }
+
+  if (doesHostMatchCompany(hostname, companyName)) {
+    return { isAllowed: true, isVerified: true, hostname, reason: 'Verified employer corporate portal' };
+  }
+
+  // Arbitrary external domain not matching company name and not a verified ATS/form
+  return { isAllowed: false, isVerified: false, hostname, reason: 'Unverified external destination' };
+}
+
 export default function JobDetails() {
   const { id } = useParams();
   const { getJobById, getCompanyById, isJobSaved, toggleSaveJob, hasApplied } = useJobs();
@@ -116,55 +302,26 @@ export default function JobDetails() {
     job.status !== 'Published' ||
     (job.expiresAt && new Date(job.expiresAt) < new Date());
 
-  // Helper to detect disallowed third-party aggregator links (e.g. CA Way, Naukri, Indeed, etc.)
-  const isDisallowedAggregatorLink = (url) => {
-    if (!url) return false;
-    const lower = url.toLowerCase();
-    const disallowed = [
-      'caway.in',
-      'caway.',
-      'naukri.com',
-      'indeed.com',
-      'indeed.co.in',
-      'foundit.in',
-      'monsterindia.com',
-      'shine.com',
-      'internshala.com',
-      'freshersworld.com',
-      'timesjobs.com',
-      'instahyre.com',
-      'hirist.com',
-      'hirist.tech',
-      'iimjobs.com',
-      'glassdoor.com',
-      'glassdoor.co.in',
-      'simplyhired.com',
-      'simplyhired.co.in',
-      'jooble.org',
-      'caclubindia.com',
-      'casansaar.com',
-      'taxguru.in',
-      'cadwar.in',
-    ];
-    return disallowed.some((domain) => lower.includes(domain));
-  };
-
   const rawLink = (job.applicationLink || '').trim();
-  const hasDisallowedLink = isDisallowedAggregatorLink(rawLink);
+  const destEval = rawLink ? evaluateApplicationDestination(rawLink, displayName) : null;
+  const isLinkAllowedAndVerified = destEval ? (destEval.isAllowed && destEval.isVerified) : false;
 
-  // Determine effective application method (with aggregator protection and fallback)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const hasValidRecruiterEmail = Boolean(job.recruiterEmail && emailRegex.test(job.recruiterEmail.trim()));
+
+  // Determine effective application method (with strict destination verification and fallback)
   let appMethod = job.applicationMethod;
   if (!appMethod) {
-    if (rawLink && !hasDisallowedLink) {
+    if (isLinkAllowedAndVerified) {
       appMethod = 'external';
-    } else if (job.recruiterEmail && job.recruiterEmail.trim()) {
+    } else if (hasValidRecruiterEmail) {
       appMethod = 'email';
     } else {
       appMethod = 'internal';
     }
-  } else if (appMethod === 'external' && hasDisallowedLink) {
-    // Strictly block CA Way and aggregator redirection; fallback to email or internal apply
-    if (job.recruiterEmail && job.recruiterEmail.trim()) {
+  } else if (appMethod === 'external' && !isLinkAllowedAndVerified) {
+    // Strictly block CA Way, aggregators, and unverified external destinations; fallback to email or internal apply
+    if (hasValidRecruiterEmail) {
       appMethod = 'email';
     } else {
       appMethod = 'internal';
@@ -172,13 +329,11 @@ export default function JobDetails() {
   }
 
   let safeExternalUrl = '';
-  if (appMethod === 'external' && !hasDisallowedLink) {
-    if (rawLink) {
-      safeExternalUrl =
-        rawLink.startsWith('http://') || rawLink.startsWith('https://')
-          ? rawLink
-          : `https://${rawLink}`;
-    }
+  if (appMethod === 'external' && isLinkAllowedAndVerified && rawLink) {
+    safeExternalUrl =
+      rawLink.startsWith('http://') || rawLink.startsWith('https://')
+        ? rawLink
+        : `https://${rawLink}`;
   }
 
   // Email subject and body formatting

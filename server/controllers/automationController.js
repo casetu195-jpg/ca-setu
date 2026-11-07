@@ -15,12 +15,11 @@ function safeTimingCompare(a, b) {
 }
 
 /**
- * List of known third-party job aggregators, generic listing portals, and competing platforms.
+ * Known third-party job aggregators, generic listing portals, and competing platforms.
  * Candidate Apply buttons must never direct applicants to generic job boards or competing aggregators.
  */
-const DISALLOWED_AGGREGATOR_DOMAINS = [
+export const BLOCKED_AGGREGATOR_DOMAINS = [
   'caway.in',
-  'caway.',
   'naukri.com',
   'indeed.com',
   'indeed.co.in',
@@ -43,16 +42,230 @@ const DISALLOWED_AGGREGATOR_DOMAINS = [
   'casansaar.com',
   'taxguru.in',
   'cadwar.in',
+  'unstop.com',
+  'cutshort.io',
+  'apna.co',
+  'linkedin.com',
 ];
 
 /**
- * Detects whether a URL points to a competing vacancy aggregator or generic job board
- * rather than a genuine employer-controlled destination (e.g. official careers portal, Google Form, ATS).
+ * URL shorteners and masking domains that obscure the true destination.
  */
-function isDisallowedAggregatorUrl(url) {
-  if (!url || typeof url !== 'string') return false;
-  const lower = url.toLowerCase().trim();
-  return DISALLOWED_AGGREGATOR_DOMAINS.some((domain) => lower.includes(domain));
+export const BLOCKED_SHORTENER_DOMAINS = [
+  'bit.ly',
+  'tinyurl.com',
+  't.co',
+  'cutt.ly',
+  'rb.gy',
+  'shorturl.at',
+  'is.gd',
+  'ow.ly',
+  'rebrand.ly',
+  'buff.ly',
+];
+
+/**
+ * Verified Application Forms platforms commonly used by genuine employers.
+ */
+export const VERIFIED_FORM_DOMAINS = [
+  'forms.gle',
+  'forms.office.com',
+  'forms.microsoft.com',
+  'typeform.com',
+  'forms.zohopublic.com',
+  'forms.zoho.com',
+  'forms.zohopublic.in',
+  'forms.zoho.in',
+];
+
+/**
+ * Verified Enterprise Applicant Tracking Systems (ATS) used by employers.
+ */
+export const VERIFIED_ATS_DOMAINS = [
+  'myworkdayjobs.com',
+  'workday.com',
+  'greenhouse.io',
+  'lever.co',
+  'smartrecruiters.com',
+  'darwinbox.in',
+  'darwinbox.com',
+  'keka.com',
+  'talentlyft.com',
+  'recruitee.com',
+  'bamboohr.com',
+  'jobvite.com',
+  'taleo.net',
+  'successfactors.com',
+  'successfactors.eu',
+  'oraclecloud.com',
+  'sap.com',
+  'ashbyhq.com',
+  'rippling.com',
+  'freshteam.com',
+  'workable.com',
+  'icims.com',
+  'zohorecruit.com',
+  'zohorecruit.in',
+];
+
+/**
+ * Parse URL safely, extracting normalized hostname and pathname
+ */
+export function parseUrlDetails(urlStr) {
+  if (!urlStr || typeof urlStr !== 'string') return null;
+  let trimmed = urlStr.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = 'https://' + trimmed;
+  }
+  try {
+    const parsed = new URL(trimmed);
+    return {
+      hostname: parsed.hostname.toLowerCase(),
+      pathname: parsed.pathname || '/',
+      search: parsed.search || '',
+      fullUrl: parsed.href,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Validates whether a hostname matches a domain or its subdomains.
+ * Prevents false positives where domain is in query string or an unrelated word.
+ */
+export function isHostMatchingDomain(hostname, targetDomain) {
+  if (!hostname || !targetDomain) return false;
+  const h = hostname.toLowerCase();
+  const t = targetDomain.toLowerCase();
+  return h === t || h.endsWith('.' + t);
+}
+
+export function isBlockedAggregator(hostname) {
+  if (!hostname) return false;
+  return BLOCKED_AGGREGATOR_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
+}
+
+export function isBlockedShortener(hostname) {
+  if (!hostname) return false;
+  return BLOCKED_SHORTENER_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain));
+}
+
+export function isVerifiedApplicationPlatform(hostname, pathname) {
+  if (!hostname) return false;
+  if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
+  if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').startsWith('/forms')) return true;
+  if (VERIFIED_FORM_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  if (VERIFIED_ATS_DOMAINS.some((domain) => isHostMatchingDomain(hostname, domain))) return true;
+  return false;
+}
+
+export function doesHostMatchCompany(hostname, companyName) {
+  if (!hostname || !companyName) return false;
+  const cleanComp = companyName
+    .toLowerCase()
+    .replace(/\b(private|pvt|limited|ltd|llp|chartered|accountants|firm|and|co|company|corp|corporation|inc|india)\b/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim();
+
+  const concatComp = cleanComp.replace(/\s+/g, '');
+  if (concatComp.length >= 3 && hostname.includes(concatComp)) {
+    return true;
+  }
+
+  const tokens = cleanComp.split(/\s+/).filter((t) => t.length >= 3);
+  for (const token of tokens) {
+    if (hostname.includes(token)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function hasCareerSignals(hostname, pathname) {
+  if (!hostname) return false;
+  const hostParts = hostname.split('.');
+  const subdomain = hostParts[0];
+  const careerSubdomains = ['careers', 'career', 'jobs', 'job', 'talent', 'recruit', 'recruitment'];
+  if (careerSubdomains.includes(subdomain)) {
+    return true;
+  }
+
+  const p = (pathname || '').toLowerCase();
+  const careerPaths = ['/careers', '/career', '/jobs', '/job/', '/openings', '/open-roles', '/vacancies', '/apply'];
+  return careerPaths.some((cp) => p.includes(cp));
+}
+
+/**
+ * Comprehensive destination evaluation using strict hostname parsing.
+ */
+export function evaluateApplicationDestination(urlStr, companyName = '') {
+  const parsed = parseUrlDetails(urlStr);
+  if (!parsed) {
+    return {
+      status: 'INVALID_URL',
+      isAllowed: false,
+      isVerified: false,
+      reason: 'The provided application URL could not be parsed as a valid web address.',
+    };
+  }
+
+  const { hostname, pathname } = parsed;
+
+  if (isBlockedAggregator(hostname)) {
+    return {
+      status: 'BLOCKED_AGGREGATOR',
+      isAllowed: false,
+      isVerified: false,
+      hostname,
+      reason: `Application destination '${hostname}' is a third-party job aggregator or competing listing board. CA Dwar candidates must not be redirected to job aggregators.`,
+    };
+  }
+
+  if (isBlockedShortener(hostname)) {
+    return {
+      status: 'BLOCKED_SHORTENER',
+      isAllowed: false,
+      isVerified: false,
+      hostname,
+      reason: `Application destination '${hostname}' is a URL shortener. Direct employer destination must be provided.`,
+    };
+  }
+
+  if (isVerifiedApplicationPlatform(hostname, pathname)) {
+    return {
+      status: 'VERIFIED_PLATFORM',
+      isAllowed: true,
+      isVerified: true,
+      hostname,
+      reason: 'Verified employer application platform or official form.',
+    };
+  }
+
+  const matchesCompany = doesHostMatchCompany(hostname, companyName);
+
+  if (matchesCompany) {
+    return {
+      status: 'VERIFIED_EMPLOYER_DOMAIN',
+      isAllowed: true,
+      isVerified: true,
+      hostname,
+      reason: 'Verified direct employer corporate domain.',
+    };
+  }
+
+  // 5. Unknown or unverified external domain
+  // Even if an arbitrary domain has '/careers' or '/job' in its path, if it does not correlate
+  // with the hiring company and is not a verified ATS or official form, it cannot be trusted automatically.
+  // It must be held for manual verification to protect candidates.
+  return {
+    status: 'UNVERIFIED_DESTINATION',
+    isAllowed: false,
+    isVerified: false,
+    hostname,
+    reason: `Application destination '${hostname}' is an unverified external domain. CA Dwar requires employer-controlled career portals, verified ATS links, or official forms. Unverified destinations must be held for manual verification.`,
+  };
 }
 
 /**
@@ -299,43 +512,44 @@ export async function publishJobFromAutomation(req, res, next) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const isEmailValid = recruiterEmail && emailRegex.test(recruiterEmail);
 
-    // Safeguard: Block third-party aggregator or CA Way links from becoming Application URL
-    if (isDisallowedAggregatorUrl(applicationLink)) {
-      if (isEmailValid) {
-        // Fallback safely to genuine recruiter email destination
-        applicationMethod = 'email';
-        applicationLink = '';
+    // Safeguard: Strict Hostname Parsing & Destination Verification for Application Destination
+    if (applicationLink) {
+      const destEval = evaluateApplicationDestination(applicationLink, companyName);
+
+      if (!destEval.isAllowed || !destEval.isVerified) {
+        if (isEmailValid) {
+          // Fall back cleanly to genuine recruiter email destination and clear disallowed/unverified link
+          applicationMethod = 'email';
+          applicationLink = '';
+        } else {
+          // No genuine employer application channel available: reject publication and hold for manual verification
+          return res.status(400).json({
+            success: false,
+            message: `Vacancy rejected: ${destEval.reason}`,
+          });
+        }
       } else {
-        // No genuine employer application channel available: reject publication
-        return res.status(400).json({
-          success: false,
-          message: `Vacancy rejected: Application URL cannot be a third-party aggregator or CA Way link ('${applicationLink}'). The Application URL must be a genuine employer-controlled destination (such as the company's official career portal, official application form, or verified recruiter email). If no direct employer destination is available, keep the vacancy unpublished for manual verification.`,
-        });
+        // Link is verified and allowed: normalize protocol
+        if (!applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
+          applicationLink = 'https://' + applicationLink;
+        }
       }
+    }
+
+    // Require at least one verified application destination or recruiter email
+    if (!applicationLink && !isEmailValid) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vacancy rejected: No genuine employer application destination or verified recruiter email was provided. Vacancies must contain either a verified employer career portal, ATS link, official form (Google/Microsoft), or verified recruiter email to be published.',
+      });
     }
 
     if (applicationLink) {
-      if (!applicationLink.startsWith('http://') && !applicationLink.startsWith('https://')) {
-        applicationLink = 'https://' + applicationLink;
-      }
-      try {
-        new URL(applicationLink);
-      } catch {
-        return res.status(400).json({
-          success: false,
-          message: 'Invalid Application URL provided.',
-        });
-      }
-    }
-
-    if (applicationLink && (applicationMethod === 'external' || !applicationMethod || applicationMethod.includes('link') || applicationMethod.includes('form') || applicationMethod.includes('url'))) {
       applicationMethod = 'external';
-    } else if (isEmailValid && (applicationMethod === 'email' || applicationMethod.includes('email') || !applicationMethod)) {
+    } else if (isEmailValid) {
       applicationMethod = 'email';
-    } else if (applicationMethod === 'internal' || (!applicationLink && !isEmailValid)) {
+    } else {
       applicationMethod = 'internal';
-    } else if (applicationLink) {
-      applicationMethod = 'external';
     }
 
     // 4. Locate or Create Partner Company Record

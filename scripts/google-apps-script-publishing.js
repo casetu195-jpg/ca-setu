@@ -19,6 +19,282 @@ var CONFIG = {
 };
 
 /**
+ * Known third-party job aggregators, generic listing boards, and competing platforms.
+ * Candidate Apply buttons must NEVER redirect to these platforms.
+ */
+var BLOCKED_AGGREGATOR_DOMAINS = [
+  'caway.in',
+  'naukri.com',
+  'indeed.com',
+  'indeed.co.in',
+  'foundit.in',
+  'monsterindia.com',
+  'shine.com',
+  'internshala.com',
+  'freshersworld.com',
+  'timesjobs.com',
+  'instahyre.com',
+  'hirist.com',
+  'hirist.tech',
+  'iimjobs.com',
+  'glassdoor.com',
+  'glassdoor.co.in',
+  'simplyhired.com',
+  'simplyhired.co.in',
+  'jooble.org',
+  'caclubindia.com',
+  'casansaar.com',
+  'taxguru.in',
+  'cadwar.in',
+  'unstop.com',
+  'cutshort.io',
+  'apna.co',
+  'linkedin.com'
+];
+
+/**
+ * URL shorteners and masking domains that obscure the true destination.
+ */
+var BLOCKED_SHORTENER_DOMAINS = [
+  'bit.ly',
+  'tinyurl.com',
+  't.co',
+  'cutt.ly',
+  'rb.gy',
+  'shorturl.at',
+  'is.gd',
+  'ow.ly',
+  'rebrand.ly',
+  'buff.ly'
+];
+
+/**
+ * Verified Application Forms platforms commonly used by genuine employers.
+ */
+var VERIFIED_FORM_DOMAINS = [
+  'forms.gle',
+  'forms.office.com',
+  'forms.microsoft.com',
+  'typeform.com',
+  'forms.zohopublic.com',
+  'forms.zoho.com',
+  'forms.zohopublic.in',
+  'forms.zoho.in'
+];
+
+/**
+ * Verified Enterprise Applicant Tracking Systems (ATS) used by employers.
+ */
+var VERIFIED_ATS_DOMAINS = [
+  'myworkdayjobs.com',
+  'workday.com',
+  'greenhouse.io',
+  'lever.co',
+  'smartrecruiters.com',
+  'darwinbox.in',
+  'darwinbox.com',
+  'keka.com',
+  'talentlyft.com',
+  'recruitee.com',
+  'bamboohr.com',
+  'jobvite.com',
+  'taleo.net',
+  'successfactors.com',
+  'successfactors.eu',
+  'oraclecloud.com',
+  'sap.com',
+  'ashbyhq.com',
+  'rippling.com',
+  'freshteam.com',
+  'workable.com',
+  'icims.com',
+  'zohorecruit.com',
+  'zohorecruit.in'
+];
+
+/**
+ * Safely parse a URL string and extract lowercase hostname and pathname.
+ * Compatible with modern V8 runtime and fallback environments.
+ */
+function parseUrlDetails(urlStr) {
+  if (!urlStr || typeof urlStr !== 'string') return null;
+  var trimmed = urlStr.trim();
+  if (!/^https?:\/\//i.test(trimmed)) {
+    trimmed = 'https://' + trimmed;
+  }
+  try {
+    if (typeof URL !== 'undefined') {
+      var parsed = new URL(trimmed);
+      return {
+        hostname: (parsed.hostname || '').toLowerCase(),
+        pathname: parsed.pathname || '/',
+        fullUrl: parsed.href
+      };
+    }
+  } catch (e) {
+    // Fallback to regex parser
+  }
+
+  var match = trimmed.match(/^https?:\/\/(?:[^:@\/\s]+(?::[^@\/\s]*)?@)?([^\/\?#:\s]+)(?::\d+)?(\/[^\?#\s]*)?/i);
+  if (match) {
+    return {
+      hostname: (match[1] || '').toLowerCase(),
+      pathname: match[2] || '/',
+      fullUrl: trimmed
+    };
+  }
+  return null;
+}
+
+/**
+ * Check if a hostname matches a domain or any of its subdomains.
+ */
+function isHostMatchingDomain(hostname, targetDomain) {
+  if (!hostname || !targetDomain) return false;
+  var h = hostname.toLowerCase();
+  var t = targetDomain.toLowerCase();
+  return h === t || (h.length > t.length && h.slice(-t.length - 1) === '.' + t);
+}
+
+function isBlockedAggregator(hostname) {
+  if (!hostname) return false;
+  for (var i = 0; i < BLOCKED_AGGREGATOR_DOMAINS.length; i++) {
+    if (isHostMatchingDomain(hostname, BLOCKED_AGGREGATOR_DOMAINS[i])) return true;
+  }
+  return false;
+}
+
+function isBlockedShortener(hostname) {
+  if (!hostname) return false;
+  for (var i = 0; i < BLOCKED_SHORTENER_DOMAINS.length; i++) {
+    if (isHostMatchingDomain(hostname, BLOCKED_SHORTENER_DOMAINS[i])) return true;
+  }
+  return false;
+}
+
+function isVerifiedApplicationPlatform(hostname, pathname) {
+  if (!hostname) return false;
+  if (isHostMatchingDomain(hostname, 'forms.gle')) return true;
+  if (isHostMatchingDomain(hostname, 'docs.google.com') && (pathname || '').indexOf('/forms') === 0) return true;
+
+  for (var i = 0; i < VERIFIED_FORM_DOMAINS.length; i++) {
+    if (isHostMatchingDomain(hostname, VERIFIED_FORM_DOMAINS[i])) return true;
+  }
+  for (var j = 0; j < VERIFIED_ATS_DOMAINS.length; j++) {
+    if (isHostMatchingDomain(hostname, VERIFIED_ATS_DOMAINS[j])) return true;
+  }
+  return false;
+}
+
+function doesHostMatchCompany(hostname, companyName) {
+  if (!hostname || !companyName) return false;
+  var cleanComp = companyName
+    .toLowerCase()
+    .replace(/\b(private|pvt|limited|ltd|llp|chartered|accountants|firm|and|co|company|corp|corporation|inc|india)\b/g, '')
+    .replace(/[^a-z0-9\s]/g, '')
+    .trim();
+
+  var concatComp = cleanComp.replace(/\s+/g, '');
+  if (concatComp.length >= 3 && hostname.indexOf(concatComp) !== -1) {
+    return true;
+  }
+
+  var rawTokens = cleanComp.split(/\s+/);
+  for (var i = 0; i < rawTokens.length; i++) {
+    var tok = rawTokens[i];
+    if (tok.length >= 3 && hostname.indexOf(tok) !== -1) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function hasCareerSignals(hostname, pathname) {
+  if (!hostname) return false;
+  var hostParts = hostname.split('.');
+  var subdomain = hostParts[0];
+  var careerSubdomains = ['careers', 'career', 'jobs', 'job', 'talent', 'recruit', 'recruitment'];
+  for (var i = 0; i < careerSubdomains.length; i++) {
+    if (subdomain === careerSubdomains[i]) return true;
+  }
+
+  var p = (pathname || '').toLowerCase();
+  var careerPaths = ['/careers', '/career', '/jobs', '/job/', '/openings', '/open-roles', '/vacancies', '/apply'];
+  for (var j = 0; j < careerPaths.length; j++) {
+    if (p.indexOf(careerPaths[j]) !== -1) return true;
+  }
+  return false;
+}
+
+/**
+ * Comprehensive destination evaluation with strict hostname parsing.
+ */
+function evaluateApplicationDestination(urlStr, companyName) {
+  var parsed = parseUrlDetails(urlStr);
+  if (!parsed) {
+    return {
+      status: 'INVALID_URL',
+      isAllowed: false,
+      isVerified: false,
+      reason: 'The provided application URL could not be parsed as a valid web address.'
+    };
+  }
+
+  var hostname = parsed.hostname;
+  var pathname = parsed.pathname;
+
+  if (isBlockedAggregator(hostname)) {
+    return {
+      status: 'BLOCKED_AGGREGATOR',
+      isAllowed: false,
+      isVerified: false,
+      hostname: hostname,
+      reason: 'Application destination is a third-party aggregator (' + hostname + ').'
+    };
+  }
+
+  if (isBlockedShortener(hostname)) {
+    return {
+      status: 'BLOCKED_SHORTENER',
+      isAllowed: false,
+      isVerified: false,
+      hostname: hostname,
+      reason: 'Application destination is a URL shortener (' + hostname + ').'
+    };
+  }
+
+  if (isVerifiedApplicationPlatform(hostname, pathname)) {
+    return {
+      status: 'VERIFIED_PLATFORM',
+      isAllowed: true,
+      isVerified: true,
+      hostname: hostname,
+      reason: 'Verified application platform or official form.'
+    };
+  }
+
+  if (doesHostMatchCompany(hostname, companyName || '')) {
+    return {
+      status: 'VERIFIED_EMPLOYER_DOMAIN',
+      isAllowed: true,
+      isVerified: true,
+      hostname: hostname,
+      reason: 'Verified direct employer corporate domain.'
+    };
+  }
+
+  // Arbitrary external domain not matching company name and not a verified ATS/form
+  return {
+    status: 'UNVERIFIED_DESTINATION',
+    isAllowed: false,
+    isVerified: false,
+    hostname: hostname,
+    reason: 'Application destination (' + hostname + ') is an unverified external domain.'
+  };
+}
+
+/**
  * Automatically creates the 'CA Dwar' custom menu when the spreadsheet opens.
  * Preserves all existing menus, triggers, and onEdit approval protections.
  */
@@ -33,7 +309,8 @@ function onOpen() {
 
 /**
  * Main action: Reads Research Queue, filters strictly approved vacancies,
- * asks for manual confirmation, and securely publishes to https://cadwar.in.
+ * validates genuine employer application destinations, asks for confirmation,
+ * and securely publishes to https://cadwar.in.
  */
 function publishApprovedVacancies() {
   var ui = SpreadsheetApp.getUi();
@@ -151,56 +428,27 @@ function publishApprovedVacancies() {
     ) {
       var rawAppUrl = colAppUrl !== -1 ? row[colAppUrl].toString().trim() : '';
       var rawContact = colContact !== -1 ? row[colContact].toString().trim() : '';
+      var rawCompName = colCompany !== -1 ? row[colCompany].toString().trim() : '';
       var rawSourceUrl = colSourceUrl !== -1 ? row[colSourceUrl].toString().trim() : '';
-
-      var lowerAppUrl = rawAppUrl.toLowerCase();
-      var disallowedDomains = [
-        'caway.in',
-        'caway.',
-        'naukri.com',
-        'indeed.com',
-        'indeed.co.in',
-        'foundit.in',
-        'monsterindia.com',
-        'shine.com',
-        'internshala.com',
-        'freshersworld.com',
-        'timesjobs.com',
-        'instahyre.com',
-        'hirist.com',
-        'hirist.tech',
-        'iimjobs.com',
-        'glassdoor.com',
-        'glassdoor.co.in',
-        'simplyhired.com',
-        'simplyhired.co.in',
-        'jooble.org',
-        'caclubindia.com',
-        'casansaar.com',
-        'taxguru.in',
-        'cadwar.in'
-      ];
-
-      var isAggregatorLink = false;
-      for (var d = 0; d < disallowedDomains.length; d++) {
-        if (lowerAppUrl.indexOf(disallowedDomains[d]) !== -1) {
-          isAggregatorLink = true;
-          break;
-        }
-      }
 
       var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
       var hasValidEmail = rawContact && emailRegex.test(rawContact);
 
-      // SAFEGUARD 1: Never use CA Way or generic third-party aggregator listing URLs as Application URL
-      if (isAggregatorLink) {
-        if (hasValidEmail) {
-          // Fall back cleanly to the genuine employer recruiter email and clear aggregator URL
-          rawAppUrl = '';
-        } else {
-          // Keep unpublished and notify user
-          sheet.getRange(i + 1, colLastResponse + 1).setValue('Held: Application URL is a third-party aggregator / listing link (' + rawAppUrl + '). Please provide the genuine employer career portal or recruiter email.');
-          continue;
+      // SAFEGUARD 1: Strict Hostname Parsing & Destination Verification
+      if (rawAppUrl) {
+        var destEval = evaluateApplicationDestination(rawAppUrl, rawCompName);
+        if (!destEval.isAllowed || !destEval.isVerified) {
+          if (hasValidEmail) {
+            // Fall back cleanly to the genuine employer recruiter email and clear aggregator/unverified URL
+            rawAppUrl = '';
+          } else {
+            // Keep unpublished and notify user in Last Publish Response
+            var heldMsg = destEval.status === 'BLOCKED_AGGREGATOR'
+              ? 'Held: Application URL is a third-party aggregator (' + destEval.hostname + '). Genuine employer destination or recruiter email required.'
+              : 'Held: Application destination (' + (destEval.hostname || rawAppUrl) + ') is unverified. Hold for manual verification or provide verified recruiter email.';
+            sheet.getRange(i + 1, colLastResponse + 1).setValue(heldMsg);
+            continue;
+          }
         }
       }
 
@@ -214,7 +462,7 @@ function publishApprovedVacancies() {
         rowIndex: i + 1, // 1-based index for sheet
         vacancyId: colVacancyId !== -1 ? row[colVacancyId].toString().trim() : 'VAC-' + (i + 1),
         title: colTitle !== -1 ? row[colTitle].toString().trim() : '',
-        companyName: colCompany !== -1 ? row[colCompany].toString().trim() : '',
+        companyName: rawCompName,
         category: colCategory !== -1 ? row[colCategory].toString().trim() : 'Articleship',
         location: colLocation !== -1 ? row[colLocation].toString().trim() : 'Pan-India',
         workMode: colWorkMode !== -1 ? row[colWorkMode].toString().trim() : 'On-site',
@@ -244,7 +492,8 @@ function publishApprovedVacancies() {
       '  ✓ Verification Status = Verified\n' +
       '  ✓ Duplicate Check = No Duplicate\n' +
       '  ✓ Approval Status = Approved\n' +
-      '  ✓ Publish Status != Published\n\n' +
+      '  ✓ Publish Status != Published\n' +
+      '  ✓ Genuine Employer Application Portal, ATS, Form, or Recruiter Email\n\n' +
       'Please verify and approve vacancies manually in the Research Queue before publishing.',
       ui.ButtonSet.OK
     );
