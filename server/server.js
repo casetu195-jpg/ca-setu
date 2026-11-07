@@ -10,6 +10,7 @@ import authRoutes from './routes/authRoutes.js';
 import jobRoutes from './routes/jobRoutes.js';
 import applicationRoutes from './routes/applicationRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import automationRoutes from './routes/automationRoutes.js';
 
 dotenv.config();
 
@@ -95,6 +96,8 @@ app.use('/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/applications', applicationRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/automation', automationRoutes);
+app.use('/automation', automationRoutes);
 
 // Centralized Error Handling Middleware
 app.use(errorHandler);

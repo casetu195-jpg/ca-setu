@@ -125,9 +125,14 @@ const jobSchema = new mongoose.Schema(
       default: 'employer',
       index: true,
     },
+    externalId: {
+      type: String,
+      trim: true,
+      index: true,
+    },
     postingSource: {
       type: String,
-      enum: ['admin_dashboard', 'employer_portal', 'api', 'seed'],
+      enum: ['admin_dashboard', 'employer_portal', 'api', 'seed', 'sheets_automation'],
       default: 'employer_portal',
     },
     isAdminVerified: {
@@ -141,6 +146,15 @@ const jobSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+  }
+);
+
+// Safe partial unique index: enforces uniqueness only on non-empty externalId strings
+jobSchema.index(
+  { externalId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { externalId: { $type: 'string', $gt: '' } },
   }
 );
 
