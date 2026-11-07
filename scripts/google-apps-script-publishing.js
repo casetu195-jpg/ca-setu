@@ -10,8 +10,8 @@
  * ============================================================================
  */
 
-// Configuration Constants
-var CONFIG = {
+// Configuration Constants for Vacancy Publishing Integration
+var PUBLISHING_CONFIG = {
   WEBSITE_URL: 'https://cadwar.in',
   PUBLISH_ENDPOINT: 'https://cadwar.in/api/automation/publish-job',
   SHEET_NAME: 'Research Queue',
@@ -321,15 +321,15 @@ function onOpen() {
 function publishApprovedVacancies() {
   var ui = SpreadsheetApp.getUi();
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName(CONFIG.SHEET_NAME);
+  var sheet = ss.getSheetByName(PUBLISHING_CONFIG.SHEET_NAME);
 
   if (!sheet) {
-    ui.alert('Error', 'Sheet "' + CONFIG.SHEET_NAME + '" not found in this spreadsheet.', ui.ButtonSet.OK);
+    ui.alert('Error', 'Sheet "' + PUBLISHING_CONFIG.SHEET_NAME + '" not found in this spreadsheet.', ui.ButtonSet.OK);
     return;
   }
 
   // 1. Check API Key in Script Properties
-  var apiKey = PropertiesService.getScriptProperties().getProperty(CONFIG.SCRIPT_PROPERTY_KEY);
+  var apiKey = PropertiesService.getScriptProperties().getProperty(PUBLISHING_CONFIG.SCRIPT_PROPERTY_KEY);
   if (!apiKey || apiKey.trim() === '') {
     ui.alert(
       'Missing Automation API Key',
@@ -571,7 +571,7 @@ function publishApprovedVacancies() {
     };
 
     try {
-      var apiRes = UrlFetchApp.fetch(CONFIG.PUBLISH_ENDPOINT, options);
+      var apiRes = UrlFetchApp.fetch(PUBLISHING_CONFIG.PUBLISH_ENDPOINT, options);
       var code = apiRes.getResponseCode();
       var resText = apiRes.getContentText();
       var json = {};
@@ -631,7 +631,7 @@ function publishApprovedVacancies() {
  */
 function checkAutomationConnection() {
   var ui = SpreadsheetApp.getUi();
-  var apiKey = PropertiesService.getScriptProperties().getProperty(CONFIG.SCRIPT_PROPERTY_KEY);
+  var apiKey = PropertiesService.getScriptProperties().getProperty(PUBLISHING_CONFIG.SCRIPT_PROPERTY_KEY);
 
   if (!apiKey || apiKey.trim() === '') {
     ui.alert(
@@ -656,7 +656,7 @@ function checkAutomationConnection() {
       muteHttpExceptions: true
     };
 
-    var res = UrlFetchApp.fetch(CONFIG.PUBLISH_ENDPOINT, options);
+    var res = UrlFetchApp.fetch(PUBLISHING_CONFIG.PUBLISH_ENDPOINT, options);
     var code = res.getResponseCode();
     var text = res.getContentText();
     var json = {};
@@ -692,6 +692,6 @@ function checkAutomationConnection() {
       );
     }
   } catch (err) {
-    ui.alert('Connection Error', 'Could not reach ' + CONFIG.PUBLISH_ENDPOINT + ':\n' + err.message, ui.ButtonSet.OK);
+    ui.alert('Connection Error', 'Could not reach ' + PUBLISHING_CONFIG.PUBLISH_ENDPOINT + ':\n' + err.message, ui.ButtonSet.OK);
   }
 }
