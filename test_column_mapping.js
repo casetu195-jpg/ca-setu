@@ -214,7 +214,7 @@ assert.strictEqual(processedAsian[18], 'On Hold', 'Asian Paints Approval Status 
 assert.strictEqual(processedAsian[19], 'Unpublished', 'Publish Status must be Unpublished');
 console.log('✓ Asian Paints strictly placed On Hold and Unpublished.');
 
-console.log('\n=== TEST 5: Real Firm Verification (Sukhbir and Associates, Nitin Pandey & Co., ANS & Associates) ===');
+console.log('\n=== TEST 5: Real Firm Verification in Cleared Test Queue (VAC-001, VAC-002, VAC-003) ===');
 const testFirms = [
   {
     companyName: 'Sukhbir and Associates',
@@ -235,12 +235,14 @@ const testFirms = [
   }
 ];
 
-const processedFirms = processImportBatch(testFirms, existingRows);
+// Cleared Test Queue has 0 existing vacancies
+const clearedTestQueue = [];
+const processedFirms = processImportBatch(testFirms, clearedTestQueue);
 assert.strictEqual(processedFirms.length, 3, 'Must process 3 firms');
 
-// Validate Sukhbir and Associates
+// Validate Sukhbir and Associates in Cleared Test Queue
 const sukhbir = processedFirms[0];
-assert.strictEqual(sukhbir[0], 'VAC-086', 'Col A: Must generate sequential Vacancy ID VAC-086');
+assert.strictEqual(sukhbir[0], 'VAC-001', 'Col A: Must generate VAC-001 in cleared Test Queue');
 assert.strictEqual(sukhbir[3], 'Sukhbir and Associates', 'Col D: Company Name');
 assert.strictEqual(sukhbir[4], 'Articleship Trainee', 'Col E: Job Title');
 // Verify Columns F through O do NOT contain Job Title
@@ -250,9 +252,9 @@ for (let c = 5; c <= 14; c++) {
 }
 assert(sukhbir[20].includes('[VERIFICATION NEEDED]'), 'Remarks must flag missing fields');
 
-// Validate Nitin Pandey & Co.
+// Validate Nitin Pandey & Co. in Cleared Test Queue
 const nitin = processedFirms[1];
-assert.strictEqual(nitin[0], 'VAC-087', 'Col A: Must generate sequential Vacancy ID VAC-087');
+assert.strictEqual(nitin[0], 'VAC-002', 'Col A: Must generate VAC-002 in cleared Test Queue');
 assert.strictEqual(nitin[3], 'Nitin Pandey & Co.', 'Col D: Company Name');
 assert.strictEqual(nitin[4], 'CA Industrial Trainee', 'Col E: Job Title');
 assert.strictEqual(nitin[5], 'Delhi', 'Col F: Location correctly mapped to Delhi');
@@ -261,9 +263,9 @@ for (let c = 6; c <= 14; c++) {
   assert.strictEqual(nitin[c], '', `Col ${CANONICAL_25_HEADERS[c]} must be empty string when unavailable`);
 }
 
-// Validate ANS & Associates
+// Validate ANS & Associates in Cleared Test Queue
 const ans = processedFirms[2];
-assert.strictEqual(ans[0], 'VAC-088', 'Col A: Must generate sequential Vacancy ID VAC-088');
+assert.strictEqual(ans[0], 'VAC-003', 'Col A: Must generate VAC-003 in cleared Test Queue');
 assert.strictEqual(ans[3], 'ANS & Associates', 'Col D: Company Name');
 assert.strictEqual(ans[4], 'Tax Associate', 'Col E: Job Title');
 assert.strictEqual(ans[14], 'careers@ansassociates.com', 'Col O: Contact Details');
@@ -272,11 +274,11 @@ for (let c = 5; c <= 13; c++) {
   assert.strictEqual(ans[c], '', `Col ${CANONICAL_25_HEADERS[c]} must be empty string when unavailable`);
 }
 
-console.log('✓ Verified: Vacancy IDs generated (VAC-086, VAC-087, VAC-088).');
+console.log('✓ Verified: Vacancy IDs start cleanly from VAC-001, VAC-002, VAC-003 in cleared Test Queue.');
 console.log('✓ Verified: Job Title is NEVER used as fallback for Location through Contact Details.');
 console.log('✓ Verified: Missing information left blank and flagged in Remarks.');
 
-console.log('\n--- 25-COLUMN VERIFICATION MATRIX ---');
+console.log('\n--- 25-COLUMN VERIFICATION MATRIX (CLEARED TEST QUEUE) ---');
 console.log(
   'Col'.padEnd(5) +
   'Header Name'.padEnd(24) +
@@ -299,5 +301,12 @@ for (let i = 0; i < 25; i++) {
     val3
   );
 }
+
+// Also verify continuation in live Research Queue (with 85 existing rows)
+const liveSimulatedRows = processImportBatch(testFirms, existingRows);
+assert.strictEqual(liveSimulatedRows[0][0], 'VAC-086', 'Live queue must continue at VAC-086');
+assert.strictEqual(liveSimulatedRows[1][0], 'VAC-087', 'Live queue must continue at VAC-087');
+assert.strictEqual(liveSimulatedRows[2][0], 'VAC-088', 'Live queue must continue at VAC-088');
+console.log('✓ Verified: When imported into live Research Queue (85 existing rows), sequence continues at VAC-086, VAC-087, VAC-088.');
 
 console.log('\n=== ALL TESTS PASSED SUCCESSFULLY! ===');
