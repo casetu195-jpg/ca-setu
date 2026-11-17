@@ -108,10 +108,10 @@ export default function Footer() {
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-[#176FA8] shrink-0" />
                   <a
-                    href="mailto:casetu195@gmail.com"
+                    href="mailto:hellocadwar@gmail.com"
                     className="hover:text-[#176FA8] underline underline-offset-2 transition-colors"
                   >
-                    casetu195@gmail.com
+                    hellocadwar@gmail.com
                   </a>
                 </div>
                 <div className="flex items-center gap-2">
@@ -155,11 +155,11 @@ export default function Footer() {
                 </a>
                 <span className="hidden sm:inline text-slate-300">|</span>
                 <a
-                  href="tel:+919699426036"
+                  href="tel:+917263004376"
                   className="inline-flex items-center gap-1.5 text-slate-700 hover:text-[#176FA8] font-medium"
                 >
                   <Phone className="w-3 h-3 text-[#176FA8]" />
-                  <span>+91 9699426036</span>
+                  <span>+91 7263004376</span>
                 </a>
               </div>
             </div>

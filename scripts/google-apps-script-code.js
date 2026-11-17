@@ -57,7 +57,7 @@ const CONFIG = {
       ["Setting", "Value", "Notes"],
       ["Publishing Approval", "Required", "Manual approval is compulsory"],
       ["Automation Mode", "Research Only", "No automatic publishing"],
-      ["Business Account", "casetu195@gmail.com", "CA Dwar business documents"]
+      ["Business Account", "hellocadwar@gmail.com", "CA Dwar business documents"]
     ]
   }
 };
@@ -243,7 +243,7 @@ function createSettings() {
       ["Setting", "Value", "Notes"],
       ["Publishing Approval", "Required", "Every vacancy needs manual approval"],
       ["Automation Mode", "Research Only", "No automatic publishing"],
-      ["Business Account", "casetu195@gmail.com", "Official CA Dwar documents"]
+      ["Business Account", "hellocadwar@gmail.com", "Official CA Dwar documents"]
     ]);
   }
   sheet.setFrozenRows(1);

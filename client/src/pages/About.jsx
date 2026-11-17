@@ -210,16 +210,16 @@ export default function About() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600">
           <div className="flex items-center gap-2">
             <Mail className="w-3.5 h-3.5 text-[#176FA8]" />
-            <span>Contact: </span>
-            <a href="mailto:casetu195@gmail.com" className="text-[#176FA8] underline font-medium">
-              casetu195@gmail.com
+            <span>Official Email: </span>
+            <a href="mailto:hellocadwar@gmail.com" className="text-[#176FA8] underline font-medium">
+              hellocadwar@gmail.com
             </a>
           </div>
           <div className="flex items-center gap-2">
             <Phone className="w-3.5 h-3.5 text-[#176FA8]" />
-            <span>Phone: </span>
-            <a href="tel:+919699426036" className="text-slate-800 font-medium hover:text-[#176FA8]">
-              +91 9699426036
+            <span>Company Phone: </span>
+            <a href="tel:+917263004376" className="text-slate-800 font-medium hover:text-[#176FA8]">
+              +91 7263004376
             </a>
           </div>
         </div>

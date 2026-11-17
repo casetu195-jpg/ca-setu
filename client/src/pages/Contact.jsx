@@ -52,10 +52,10 @@ export default function Contact() {
               <div>
                 <strong className="block text-white font-semibold">Company Email</strong>
                 <a
-                  href="mailto:casetu195@gmail.com"
+                  href="mailto:hellocadwar@gmail.com"
                   className="text-slate-300 hover:text-white underline underline-offset-2 transition-colors break-all"
                 >
-                  casetu195@gmail.com
+                  hellocadwar@gmail.com
                 </a>
               </div>
             </div>
@@ -66,12 +66,12 @@ export default function Contact() {
                 <Phone className="w-4 h-4 text-[#EEF6FC]" />
               </div>
               <div>
-                <strong className="block text-white font-semibold">Founder Helpline</strong>
+                <strong className="block text-white font-semibold">Official Contact Number</strong>
                 <a
-                  href="tel:+919699426036"
+                  href="tel:+917263004376"
                   className="text-slate-300 hover:text-white font-medium transition-colors"
                 >
-                  +91 9699426036
+                  +91 7263004376
                 </a>
               </div>
             </div>
