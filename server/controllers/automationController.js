@@ -386,6 +386,9 @@ export async function publishJobFromAutomation(req, res, next) {
         return res.status(404).json({ success: false, message: 'Vacancy not found for unpublishing' });
       }
       jobToClose.status = 'Closed';
+      if (jobToClose.externalId && !jobToClose.externalId.startsWith('archived_')) {
+        jobToClose.externalId = `archived_${jobToClose.externalId}`;
+      }
       await jobToClose.save();
       return res.status(200).json({
         success: true,
