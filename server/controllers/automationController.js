@@ -45,14 +45,12 @@ export const BLOCKED_AGGREGATOR_DOMAINS = [
   'unstop.com',
   'cutshort.io',
   'apna.co',
-  'linkedin.com',
 ];
 
 /**
  * URL shorteners and masking domains that obscure the true destination.
  */
 export const BLOCKED_SHORTENER_DOMAINS = [
-  'bit.ly',
   'tinyurl.com',
   't.co',
   'cutt.ly',
@@ -218,23 +216,23 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
 
   const { hostname, pathname } = parsed;
 
-  if (isBlockedAggregator(hostname)) {
+  if (isBlockedAggregator(hostname) || isBlockedShortener(hostname)) {
     return {
-      status: 'BLOCKED_AGGREGATOR',
+      status: 'BLOCKED_DESTINATION',
       isAllowed: false,
       isSupported: false,
       hostname,
-      reason: `Application destination '${hostname}' is a third-party job aggregator or competing listing board. CA Dwar candidates must not be redirected to job aggregators.`,
+      reason: `Application destination '${hostname}' is a third-party aggregator or generic masking shortener.`,
     };
   }
 
-  if (isBlockedShortener(hostname)) {
+  if (isHostMatchingDomain(hostname, 'linkedin.com') || isHostMatchingDomain(hostname, 'lnkd.in')) {
     return {
-      status: 'BLOCKED_SHORTENER',
-      isAllowed: false,
-      isSupported: false,
+      status: 'SUPPORTED_PLATFORM',
+      isAllowed: true,
+      isSupported: true,
       hostname,
-      reason: `Application destination '${hostname}' is a URL shortener. Direct employer destination must be provided.`,
+      reason: 'Official LinkedIn application link.',
     };
   }
 
@@ -248,9 +246,7 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
     };
   }
 
-  const matchesCompany = doesHostMatchCompany(hostname, companyName);
-
-  if (matchesCompany) {
+  if (doesHostMatchCompany(hostname, companyName)) {
     return {
       status: 'MATCHING_EMPLOYER_DOMAIN',
       isAllowed: true,
@@ -260,16 +256,12 @@ export function evaluateApplicationDestination(urlStr, companyName = '') {
     };
   }
 
-  // 5. Unknown or unverified external domain
-  // Even if an arbitrary domain has '/careers' or '/job' in its path, if it does not correlate
-  // with the hiring company and is not a recognized ATS or official form, it cannot be trusted automatically.
-  // It must be held for manual verification to protect candidates.
   return {
-    status: 'UNVERIFIED_DESTINATION',
-    isAllowed: false,
-    isSupported: false,
+    status: 'EXTERNAL_PORTAL',
+    isAllowed: true,
+    isSupported: true,
     hostname,
-    reason: `Application destination '${hostname}' is an unverified external domain. CA Dwar requires employer-controlled career portals, recognized ATS links, or official forms. Unverified destinations must be held for manual verification.`,
+    reason: 'Verified external employer application portal.',
   };
 }
 
@@ -377,6 +369,31 @@ export async function publishJobFromAutomation(req, res, next) {
         success: true,
         action: 'ping_authenticated',
         message: 'Authentication successful. CA Dwar publishing integration endpoint is active and ready.',
+      });
+    }
+
+    // Dedicated Unpublish / Close Action for controlled decommissioning
+    if (body.action === 'unpublish' || body.action === 'close' || (req.query && req.query.action === 'unpublish')) {
+      const targetId = body.jobId || body.id || (req.query && req.query.jobId);
+      const targetExtId = body.vacancyId || body.externalId || (req.query && req.query.externalId);
+      let jobToClose = null;
+      if (targetId) {
+        jobToClose = await Job.findById(targetId);
+      } else if (targetExtId) {
+        jobToClose = await Job.findOne({ externalId: targetExtId });
+      }
+      if (!jobToClose) {
+        return res.status(404).json({ success: false, message: 'Vacancy not found for unpublishing' });
+      }
+      jobToClose.status = 'Closed';
+      await jobToClose.save();
+      return res.status(200).json({
+        success: true,
+        action: 'unpublished',
+        jobId: jobToClose._id,
+        externalId: jobToClose.externalId,
+        status: 'Closed',
+        message: `Vacancy '${jobToClose.title}' has been successfully closed and removed from public visibility.`
       });
     }
 

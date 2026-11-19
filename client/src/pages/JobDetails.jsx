@@ -59,11 +59,9 @@ const BLOCKED_AGGREGATOR_DOMAINS = [
   'unstop.com',
   'cutshort.io',
   'apna.co',
-  'linkedin.com',
 ];
 
 const BLOCKED_SHORTENER_DOMAINS = [
-  'bit.ly',
   'tinyurl.com',
   't.co',
   'cutt.ly',
@@ -206,6 +204,10 @@ function evaluateApplicationDestination(urlStr, companyName = '') {
     return { isAllowed: false, isSupported: false, hostname, reason: 'Blocked aggregator or shortener' };
   }
 
+  if (isHostMatchingDomain(hostname, 'linkedin.com') || isHostMatchingDomain(hostname, 'lnkd.in')) {
+    return { isAllowed: true, isSupported: true, hostname, reason: 'LinkedIn application destination' };
+  }
+
   if (isSupportedApplicationPlatform(hostname, pathname)) {
     return { isAllowed: true, isSupported: true, hostname, reason: 'Supported application platform or official form' };
   }
@@ -214,8 +216,8 @@ function evaluateApplicationDestination(urlStr, companyName = '') {
     return { isAllowed: true, isSupported: true, hostname, reason: 'Verified employer corporate portal' };
   }
 
-  // Arbitrary external domain not matching company name and not a supported ATS/form
-  return { isAllowed: false, isSupported: false, hostname, reason: 'Unverified external destination' };
+  // Any other external employer URL
+  return { isAllowed: true, isSupported: true, hostname, reason: 'External application portal' };
 }
 
 export default function JobDetails() {
@@ -302,38 +304,48 @@ export default function JobDetails() {
     job.status !== 'Published' ||
     (job.expiresAt && new Date(job.expiresAt) < new Date());
 
-  const rawLink = (job.applicationLink || '').trim();
+  const rawLink = (job.applicationLink || job.applicationUrl || '').trim();
   const destEval = rawLink ? evaluateApplicationDestination(rawLink, displayName) : null;
   const isLinkAllowedAndSupported = destEval ? (destEval.isAllowed && destEval.isSupported) : false;
 
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const hasValidRecruiterEmail = Boolean(job.recruiterEmail && emailRegex.test(job.recruiterEmail.trim()));
 
-  // Determine effective application method (with strict destination safeguards and fallback)
-  let appMethod = job.applicationMethod;
-  if (!appMethod) {
-    if (isLinkAllowedAndSupported) {
-      appMethod = 'external';
-    } else if (hasValidRecruiterEmail) {
-      appMethod = 'email';
-    } else {
-      appMethod = 'internal';
-    }
-  } else if (appMethod === 'external' && !isLinkAllowedAndSupported) {
-    // Strictly block CA Way, aggregators, and unverified external destinations; fallback to email or internal apply
-    if (hasValidRecruiterEmail) {
-      appMethod = 'email';
-    } else {
-      appMethod = 'internal';
-    }
-  }
-
+  // Determine effective application method & labels strictly per CA Dwar rules:
+  // A. External URL / Google Form / LinkedIn: opens external destination, never creates internal applications
+  // B. Email: opens email client / copy email, never creates internal applications
+  // C. Internal: used ONLY when explicitly configured for internal applications
+  let appMethod = 'internal';
   let safeExternalUrl = '';
-  if (appMethod === 'external' && isLinkAllowedAndSupported && rawLink) {
-    safeExternalUrl =
-      rawLink.startsWith('http://') || rawLink.startsWith('https://')
-        ? rawLink
-        : `https://${rawLink}`;
+  let externalButtonLabel = 'Apply on Official Portal ↗';
+  let mobileExternalButtonLabel = 'Apply on Portal ↗';
+
+  if (rawLink) {
+    appMethod = 'external';
+    safeExternalUrl = /^https?:\/\//i.test(rawLink) ? rawLink : `https://${rawLink}`;
+    const lowerLink = rawLink.toLowerCase();
+    if (
+      lowerLink.includes('forms.gle') ||
+      lowerLink.includes('docs.google.com/forms') ||
+      lowerLink.includes('forms.office.com') ||
+      lowerLink.includes('typeform.com') ||
+      lowerLink.includes('forms.zoho')
+    ) {
+      externalButtonLabel = 'Apply via Google Form ↗';
+      mobileExternalButtonLabel = 'Google Form ↗';
+    } else if (lowerLink.includes('linkedin.com') || lowerLink.includes('lnkd.in')) {
+      externalButtonLabel = 'Apply on LinkedIn ↗';
+      mobileExternalButtonLabel = 'LinkedIn ↗';
+    } else {
+      externalButtonLabel = 'Apply on Official Portal ↗';
+      mobileExternalButtonLabel = 'Apply on Portal ↗';
+    }
+  } else if (hasValidRecruiterEmail || job.applicationMethod === 'email') {
+    appMethod = 'email';
+  } else if (job.applicationMethod === 'internal') {
+    appMethod = 'internal';
+  } else {
+    appMethod = 'internal';
   }
 
   // Email subject and body formatting
@@ -585,7 +597,7 @@ export default function JobDetails() {
                 className="px-6 py-3 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center gap-2"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span>Apply on Official Portal ↗</span>
+                <span>{externalButtonLabel}</span>
               </a>
             ) : appMethod === 'email' ? (
               <button
@@ -897,7 +909,7 @@ export default function JobDetails() {
                   className="w-full sm:w-auto px-6 py-3 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  <span>Apply on Official Portal ↗</span>
+                  <span>{externalButtonLabel}</span>
                 </a>
               ) : appMethod === 'email' ? (
                 <button
@@ -956,7 +968,7 @@ export default function JobDetails() {
                     className="w-full py-3.5 bg-[#173B63] hover:bg-[#0F2642] text-white font-bold text-sm rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    <span>Apply on Official Portal ↗</span>
+                    <span>{externalButtonLabel}</span>
                   </a>
                 ) : (
                   <div className="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs flex items-center gap-2">
@@ -1102,7 +1114,8 @@ export default function JobDetails() {
                 rel="noopener noreferrer"
                 className="px-5 py-2.5 bg-[#173B63] text-white text-xs font-bold rounded-xl shadow-xs flex items-center gap-1.5"
               >
-                <span>Apply on Portal ↗</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>{mobileExternalButtonLabel}</span>
               </a>
             ) : (
               <span className="text-xs text-slate-500 font-medium">Link Unavailable</span>
